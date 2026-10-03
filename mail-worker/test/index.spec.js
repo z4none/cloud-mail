@@ -3,6 +3,7 @@ import { env, createExecutionContext, waitOnExecutionContext } from 'cloudflare:
 import worker from '../src';
 import jwtUtils from '../src/utils/jwt-utils';
 import rateLimitService from '../src/service/rate-limit-service';
+import r2Service from '../src/service/r2-service';
 
 const context = { env: { jwt_secret: 'test-secret' } };
 
@@ -32,6 +33,16 @@ describe('JWT sessions', () => {
 		const payload = await jwtUtils.verifyToken({ env: { jwt_secret: 'wrong-secret' } }, token);
 
 		expect(payload).toBeNull();
+	});
+});
+
+describe('storage selection', () => {
+	it('prioritizes configured S3, then R2, then KV', async () => {
+		const withSetting = (setting, env = {}) => ({ get: () => setting, env });
+
+		expect(await r2Service.storageType(withSetting({ bucket: 'bucket', endpoint: 'https://s3.example.com', s3AccessKey: 'key', s3SecretKey: 'secret' }, { r2: {} }))).toBe('S3');
+		expect(await r2Service.storageType(withSetting({ bucket: '', endpoint: '', s3AccessKey: '', s3SecretKey: '' }, { r2: {} }))).toBe('R2');
+		expect(await r2Service.storageType(withSetting({ bucket: '', endpoint: '', s3AccessKey: '', s3SecretKey: '' }))).toBe('KV');
 	});
 });
 

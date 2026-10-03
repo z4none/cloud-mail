@@ -15,3 +15,8 @@
 - 完成 Phase 2C：CI 增加后端测试与前端构建步骤。
 - 验证通过：后端 4 个测试通过；前端 release 构建通过；后端所有 JS `node --check` 通过。
 - 构建警告：Vite 提示 `NODE_ENV=release` 不推荐；存在大于 500kB chunk；Browserslist 数据过期，未阻断构建。
+- 开始 Phase 3：处理构建警告，并验证本地 Worker/前端生产流程。
+- 完成 Phase 3A：删除不受支持的 `NODE_ENV=release`；手动拆分 Vue、Element Plus、ECharts chunk，消除大 chunk 警告。
+- 完成 Phase 3B：前端 release 构建通过；Worker `wrangler deploy --dry-run --config wrangler.jsonc` 通过，确认可打包和绑定解析。
+- 完成 Phase 3C：新增 KV/R2/S3 存储选择测试；后端测试增至 5 项并全部通过。
+- 未解决但非阻断：Browserslist 数据过期。更新工具并非项目依赖，避免为元数据进行无关 lockfile 升级。

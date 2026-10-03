@@ -2,7 +2,7 @@
 
 ## 目标
 
-完成已批准设计的两个阶段：
+完成已批准设计的两个阶段，并进行第三阶段生产验证：
 1. 安全修复：SQL 注入、邮件 HTML XSS、会话过期、私有对象访问、限流、初始化凭证。
 2. 测试工程：恢复真实测试命令，补充安全/认证/对象访问测试，并接入 CI 构建检查。
 
@@ -15,6 +15,9 @@
 - [complete] Phase 2A：修复 Vitest/Wrangler 配置与测试脚本
 - [complete] Phase 2B：新增后端安全与业务测试
 - [complete] Phase 2C：前端构建、CI 校验与最终回归
+- [complete] Phase 3A：构建警告与打包优化
+- [complete] Phase 3B：本地 Worker/前端生产流程验证
+- [complete] Phase 3C：存储兼容性和安全回归测试
 
 ## 关键决策
 
@@ -37,3 +40,4 @@
 |---|---|---|
 | `ERR_PNPM_NO_IMPORTER_MANIFEST_FOUND` | 在仓库根目录运行 `pnpm test` | 根目录没有 package.json，改用 `pnpm --dir mail-worker test` |
 | `vitest is not recognized` | `pnpm --dir mail-worker test` | 当前工作区没有安装 node_modules，先安装依赖后重试 |
+| `update-browserslist-db` command not found | 直接以 pnpm exec 运行更新器 | 更新器不是项目依赖；保留非阻断警告，避免无关 lockfile 升级 |

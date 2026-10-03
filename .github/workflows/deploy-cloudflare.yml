@@ -144,16 +144,18 @@ jobs:
           
           CONFIG_FILE="wrangler-action.toml"
           
-          if [ -n "$KV_NAMESPACE_ID" ]; then
+          if [[ "$KV_NAMESPACE_ID" =~ ^[0-9a-fA-F]{32}$ ]]; then
             sed -i "s|\${KV_NAMESPACE_ID}|${KV_NAMESPACE_ID}|g" "$CONFIG_FILE"
-            echo "✅ Using the database from environment variables."
+            echo "✅ Using the KV namespace ID from environment variables."
             exit 0
+          elif [ -n "$KV_NAMESPACE_ID" ]; then
+            echo "⚠️ KV_NAMESPACE_ID is not a valid namespace ID; treating it as unset. Use the 32-character KV ID, not the namespace name."
           fi
           
-          echo "🔍 Checking if the database exists..."
+          echo "🔍 Checking if the KV namespace exists..."
           
           set +e
-            KV_LIST=$(pnpm wrangler kv namespace list 2>&1)
+            KV_LIST=$(pnpm wrangler kv namespace list --json 2>&1)
             STATUS=$?
           set -e
           
@@ -182,13 +184,15 @@ jobs:
           
           CONFIG_FILE="wrangler-action.toml"
           
-          if [ -n "$D1_DATABASE_ID" ]; then
+          if [[ "$D1_DATABASE_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
             sed -i "s|\${D1_DATABASE_ID}|${D1_DATABASE_ID}|g" "$CONFIG_FILE"
-            echo "✅ Using the database from environment variables."
+            echo "✅ Using the D1 database ID from environment variables."
             exit 0
+          elif [ -n "$D1_DATABASE_ID" ]; then
+            echo "⚠️ D1_DATABASE_ID is not a valid UUID; treating it as unset. Use the database UUID, not the database name."
           fi
           
-          echo "🔍 Checking if the database exists..."
+          echo "🔍 Checking if the D1 database exists..."
           
           set +e
             DB_LIST=$(pnpm wrangler d1 list --json 2>&1)

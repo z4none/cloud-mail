@@ -23,6 +23,7 @@
 - 对象归属不能只依赖 URL key；普通附件需要通过附件记录关联 `userId`，背景需要通过 setting 当前值校验，内嵌图片同样基于附件记录校验。
 - 浏览器 HTML `<img>` 不能自动带 Authorization，因此前端需要重写 HTML 中资源 URL，并用带 Token 的请求加载 Blob URL。
 - 不应直接把用户可控错误信息作为 HTML 返回给前端。
+- 部署失败日志显示 `KV namespace 'cloud-mail-test' is not valid`，说明 KV 名称被当作 namespace ID 使用；Workflow 原先只判断非空，不校验 ID 格式。
 
 ## 已实施发现
 

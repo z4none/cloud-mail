@@ -20,3 +20,4 @@
 - 完成 Phase 3B：前端 release 构建通过；Worker `wrangler deploy --dry-run --config wrangler.jsonc` 通过，确认可打包和绑定解析。
 - 完成 Phase 3C：新增 KV/R2/S3 存储选择测试；后端测试增至 5 项并全部通过。
 - 未解决但非阻断：Browserslist 数据过期。更新工具并非项目依赖，避免为元数据进行无关 lockfile 升级。
+- 诊断部署失败：`KV_NAMESPACE_ID` 被填成 namespace 名称 `cloud-mail-test`，而不是 32 位 KV ID；Workflow 已增加 KV/D1 ID 格式校验，并在无效时回退到按名称发现/创建。

@@ -80,6 +80,10 @@ export function formatDetailDate(time) {
     }
 }
 
+export function formatReplyDate(time) {
+    return dayjs.utc(time).tz(timeZone).format('YYYY-MM-DD HH:mm');
+}
+
 export function tzDayjs(time) {
     return dayjs.utc(time).tz(timeZone)
 }

@@ -24,3 +24,4 @@
 - 用户确认改为唯一 GitHub Actions 部署，基础设施初始化与日常代码部署分离。
 - 完成 Phase 4：移除日常 Workflow 自动创建/发现 D1、KV 的逻辑，改为强制校验真实 ID；新增 GitHub Actions 部署文档，并在 README 中链接。
 - 已验证：有效 KV/D1 ID 通过，`cloud-mail-test` 作为 KV ID 被拒绝。
+- 根据 Action 日志确认 Worker 部署和数据库初始化成功；移除无关且权限不足的 Workflow 记录清理 Action，避免部署结果被清理失败干扰。

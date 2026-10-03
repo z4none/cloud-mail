@@ -24,6 +24,7 @@
 - 浏览器 HTML `<img>` 不能自动带 Authorization，因此前端需要重写 HTML 中资源 URL，并用带 Token 的请求加载 Blob URL。
 - 不应直接把用户可控错误信息作为 HTML 返回给前端。
 - 部署失败日志显示 `KV namespace 'cloud-mail-test' is not valid`，说明 KV 名称被当作 namespace ID 使用；Workflow 原先只判断非空，不校验 ID 格式。
+- 后续 Action 日志显示 Worker 上传、绑定和数据库初始化均成功；唯一错误来自 `GitRML/delete-workflow-runs` 清理步骤缺少 Actions 写权限，与部署无关。
 
 ## 已实施发现
 

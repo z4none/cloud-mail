@@ -21,3 +21,6 @@
 - 完成 Phase 3C：新增 KV/R2/S3 存储选择测试；后端测试增至 5 项并全部通过。
 - 未解决但非阻断：Browserslist 数据过期。更新工具并非项目依赖，避免为元数据进行无关 lockfile 升级。
 - 诊断部署失败：`KV_NAMESPACE_ID` 被填成 namespace 名称 `cloud-mail-test`，而不是 32 位 KV ID；Workflow 已增加 KV/D1 ID 格式校验，并在无效时回退到按名称发现/创建。
+- 用户确认改为唯一 GitHub Actions 部署，基础设施初始化与日常代码部署分离。
+- 完成 Phase 4：移除日常 Workflow 自动创建/发现 D1、KV 的逻辑，改为强制校验真实 ID；新增 GitHub Actions 部署文档，并在 README 中链接。
+- 已验证：有效 KV/D1 ID 通过，`cloud-mail-test` 作为 KV ID 被拒绝。

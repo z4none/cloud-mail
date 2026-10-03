@@ -18,6 +18,7 @@
 - [complete] Phase 3A：构建警告与打包优化
 - [complete] Phase 3B：本地 Worker/前端生产流程验证
 - [complete] Phase 3C：存储兼容性和安全回归测试
+- [complete] Phase 4：统一 GitHub Actions 部署并移除基础设施自动创建
 
 ## 关键决策
 
@@ -41,3 +42,4 @@
 | `ERR_PNPM_NO_IMPORTER_MANIFEST_FOUND` | 在仓库根目录运行 `pnpm test` | 根目录没有 package.json，改用 `pnpm --dir mail-worker test` |
 | `vitest is not recognized` | `pnpm --dir mail-worker test` | 当前工作区没有安装 node_modules，先安装依赖后重试 |
 | `update-browserslist-db` command not found | 直接以 pnpm exec 运行更新器 | 更新器不是项目依赖；保留非阻断警告，避免无关 lockfile 升级 |
+| Ruby YAML parser unavailable | 尝试解析 GitHub Actions YAML | 改为执行 Workflow 中的 ID 校验 shell 条件，分别验证有效和无效 KV ID |

@@ -7,11 +7,11 @@ import userService from '../service/user-service';
 import permService from '../service/perm-service';
 import { t } from '../i18n/i18n'
 import app from '../hono/hono';
+import rateLimitService from '../service/rate-limit-service';
 
 const exclude = [
 	'/login',
 	'/register',
-	'/oss',
 	'/setting/websiteConfig',
 	'/webhooks',
 	'/init',
@@ -92,6 +92,7 @@ const premKey = {
 app.use('*', async (c, next) => {
 
 	const path = c.req.path;
+	await rateLimitService.check(c);
 
 	const index = exclude.findIndex(item => {
 		return path.startsWith(item);

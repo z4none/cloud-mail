@@ -3,7 +3,6 @@ import { email } from './email/email';
 import userService from './service/user-service';
 import verifyRecordService from './service/verify-record-service';
 import emailService from './service/email-service';
-import kvObjService from './service/kv-obj-service';
 import oauthService from './service/oauth-service';
 import analysisService from './service/analysis-service';
 export default {
@@ -16,10 +15,6 @@ export default {
 			req = new Request(url.toString(), req)
 			return app.fetch(req, env, ctx);
 		}
-
-		 if (['/static/','/attachments/'].some(p => url.pathname.startsWith(p))) {
-			 return await kvObjService.toObjResp( { env }, url.pathname.substring(1));
-		 }
 
 		return env.assets.fetch(req);
 	},

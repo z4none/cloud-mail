@@ -95,12 +95,18 @@ const publicService = {
 	},
 
 	async addUser(c, params) {
-		const { list } = params;
+		const { list } = params || {};
 
+		if (!Array.isArray(list)) {
+			throw new BizError('Invalid request', 400);
+		}
 		if (list.length === 0) return;
+		if (list.length > 100) {
+			throw new BizError('Too many users', 413);
+		}
 
 		for (const emailRow of list) {
-			if (!verifyUtils.isEmail(emailRow.email)) {
+			if (!emailRow || typeof emailRow.email !== 'string' || emailRow.email.length > 320 || !verifyUtils.isEmail(emailRow.email)) {
 				throw new BizError(t('notEmail'));
 			}
 
@@ -135,18 +141,17 @@ const publicService = {
 				type = roleRow ? roleRow.roleId : type;
 			}
 
-			const userSql = `INSERT INTO user (email, password, salt, type, os, browser, active_ip, create_ip, device, active_time, create_time)
-			VALUES ('${email}', '${hash}', '${salt}', '${type}', '${os}', '${browser}', '${activeIp}', '${activeIp}', '${device}', '${activeTime}', '${activeTime}')`
+			userList.push(c.env.db.prepare(`
+				INSERT INTO user (email, password, salt, type, os, browser, active_ip, create_ip, device, active_time, create_time)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			`).bind(email, hash, salt, type, os.slice(0, 128), browser.slice(0, 128), activeIp.slice(0, 128), activeIp.slice(0, 128), device.slice(0, 128), activeTime, activeTime));
 
-			const accountSql = `INSERT INTO account (email, name, user_id)
-			VALUES ('${email}', '${emailUtils.getName(email)}', 0);`;
-
-			userList.push(c.env.db.prepare(userSql));
-			userList.push(c.env.db.prepare(accountSql));
+			userList.push(c.env.db.prepare(`
+				INSERT INTO account (email, name, user_id)
+				VALUES (?, ?, (SELECT user_id FROM user WHERE email COLLATE NOCASE = ?))
+			`).bind(email, emailUtils.getName(email), email));
 
 		}
-
-		userList.push(c.env.db.prepare(`UPDATE account SET user_id = (SELECT user_id FROM user WHERE user.email = account.email) WHERE user_id = 0;`))
 
 		try {
 			await c.env.db.batch(userList);

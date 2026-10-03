@@ -2,6 +2,7 @@ import axios from "axios";
 import router from "@/router";
 import i18n from "@/i18n/index.js";
 import {useSettingStore} from "@/store/setting.js";
+import {clearObjectUrls} from "@/utils/object.js";
 
 let http = axios.create({
     baseURL: import.meta.env.VITE_BASE_URL
@@ -34,6 +35,7 @@ http.interceptors.response.use((res) => {
                     repeatNum: -4,
                 })
                 localStorage.removeItem('token')
+                clearObjectUrls()
                 router.replace('/login')
                 reject(data)
             } else if (data.code === 403) {

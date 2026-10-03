@@ -7,7 +7,8 @@ import { cors } from 'hono/cors';
 app.use('*', cors());
 
 app.onError((err, c) => {
-	if (err.name === 'BizError') {
+	const isBizError = err.name === 'BizError';
+	if (isBizError) {
 		console.log(err.message);
 	} else {
 		console.error(err);
@@ -29,7 +30,9 @@ app.onError((err, c) => {
 		return c.json(result.fail('请按照文档更新数据库<br/>Please update the database as documented',502));
 	}
 
-	return c.json(result.fail(err.message, err.code));
+	const code = isBizError && Number.isInteger(err.code) ? err.code : 500;
+	const message = isBizError ? err.message : 'Internal server error';
+	return c.json(result.fail(message, code), code);
 });
 
 export default app;

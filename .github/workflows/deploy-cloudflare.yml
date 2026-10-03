@@ -58,6 +58,14 @@ jobs:
         working-directory: ./mail-worker
         run: pnpm wrangler telemetry disable
 
+      - name: Run backend tests
+        working-directory: ./mail-worker
+        run: pnpm test
+
+      - name: Build frontend
+        working-directory: ./mail-vue
+        run: pnpm install --frozen-lockfile && pnpm run build
+
       - name: 🛠️ 设置环境 / Set up environment
         working-directory: ./mail-worker
         run: |
@@ -244,7 +252,7 @@ jobs:
             exit 1
           fi
           
-          HTTP_CODE=$(curl -sL -w "%{http_code}" -o response.txt "$WORKER_URL/api/init/${JWT_SECRET}")
+          HTTP_CODE=$(curl -sL -X POST -H "X-Initialization-Token: ${JWT_SECRET}" -w "%{http_code}" -o response.txt "$WORKER_URL/api/init")
           RESPONSE_BODY=$(cat response.txt)
 
           if [ "$RESPONSE_BODY" = "success" ]; then

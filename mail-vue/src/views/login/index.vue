@@ -163,7 +163,6 @@ import {useAccountStore} from "@/store/account.js";
 import {useUserStore} from "@/store/user.js";
 import {useUiStore} from "@/store/ui.js";
 import {Icon} from "@iconify/vue";
-import {cvtR2Url} from "@/utils/convert.js";
 import {loginUserInfo} from "@/request/my.js";
 import {permsToRouter} from "@/perm/perm.js";
 import {useI18n} from "vue-i18n";
@@ -256,6 +255,8 @@ window.loadBefore = (e) => {
   console.log('loadBefore')
 }
 
+const backgroundUrl = ref('')
+
 const loginOpacity = computed(() => {
   const opacity = settingStore.settings.loginOpacity
   return uiStore.dark ? `rgba(0, 0, 0, ${opacity})` : `rgba(255, 255, 255, ${opacity})`
@@ -265,8 +266,8 @@ const hideLoginDomain = computed(() => settingStore.settings.loginDomain === 1)
 
 const background = computed(() => {
 
-  return settingStore.settings.background ? {
-    'background-image': `url(${cvtR2Url(settingStore.settings.background)})`,
+  return backgroundUrl.value ? {
+    'background-image': `url(${backgroundUrl.value})`,
     'background-repeat': 'no-repeat',
     'background-size': 'cover',
     'background-position': 'center'

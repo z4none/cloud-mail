@@ -55,9 +55,9 @@
                 <div class="att-size">{{ formatBytes(att.size) }}</div>
                 <div class="opt-icon att-icon">
                   <Icon v-if="isImage(att.filename)" icon="hugeicons:view" width="22" height="22" @click="showImage(att.key)"/>
-                  <a :href="cvtR2Url(att.key)" download>
+                  <button class="download-button" type="button" @click="downloadAttachment(att)">
                     <Icon icon="system-uicons:push-down" width="22" height="22"/>
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
@@ -85,16 +85,14 @@ import {useAccountStore} from "@/store/account.js";
 import {formatDetailDate} from "@/utils/day.js";
 import {starAdd, starCancel} from "@/request/star.js";
 import {getExtName, formatBytes} from "@/utils/file-utils.js";
-import {cvtR2Url,toOssDomain} from "@/utils/convert.js";
+import {downloadObject, loadObjectUrl} from "@/utils/object.js";
 import {getIconByName} from "@/utils/icon-utils.js";
-import {useSettingStore} from "@/store/setting.js";
 import {allEmailDelete} from "@/request/all-email.js";
 import {useUiStore} from "@/store/ui.js";
 import {useI18n} from "vue-i18n";
 import {EmailUnreadEnum} from "@/enums/email-enum.js";
 
 const uiStore = useUiStore();
-const settingStore = useSettingStore();
 const accountStore = useAccountStore();
 const emailStore = useEmailStore();
 const router = useRouter()
@@ -181,17 +179,27 @@ function toMessage(message) {
 }
 
 function formatImage(content) {
-  content = content || '';
-  const domain = settingStore.settings.r2Domain;
-  return  content.replace(/{{domain}}/g, toOssDomain(domain) + '/');
+  return content || '';
 }
 
-function showImage(key) {
+async function showImage(key) {
   if (!isImage(key)) return;
-  const url = cvtR2Url(key)
-  srcList.length = 0
-  srcList.push(url)
-  showPreview.value = true
+  try {
+    const url = await loadObjectUrl(key)
+    srcList.length = 0
+    srcList.push(url)
+    showPreview.value = true
+  } catch {
+    ElMessage.error(t('networkErrorMsg'))
+  }
+}
+
+async function downloadAttachment(att) {
+  try {
+    await downloadObject(att.key, att.filename)
+  } catch {
+    ElMessage.error(t('networkErrorMsg'))
+  }
 }
 
 function isImage(filename) {
@@ -383,10 +391,17 @@ const handleDelete = () => {
           display: flex;
           gap: 8px;
           cursor: pointer;
-          a {
+          a, .download-button {
             color: var(--secondary-text-color);
             align-items: center;
             display: flex;
+          }
+
+          .download-button {
+            border: 0;
+            background: transparent;
+            padding: 0;
+            cursor: pointer;
           }
         }
       }

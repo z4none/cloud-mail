@@ -1,0 +1,25 @@
+{
+  "name": "cloud-mail-test",
+  "main": "src/index.js",
+  "compatibility_date": "2025-06-04",
+  "vars": {
+    "domain": ["example.com"],
+    "admin": "admin@example.com",
+    "jwt_secret": "test-secret",
+    "analysis_cache": false,
+    "orm_log": false
+  },
+  "d1_databases": [
+    {
+      "binding": "db",
+      "database_name": "cloud-mail-test",
+      "database_id": "cloud-mail-test"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "kv",
+      "id": "cloud-mail-test"
+    }
+  ]
+}

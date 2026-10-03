@@ -85,6 +85,7 @@ import {useSettingStore} from "@/store/setting.js";
 import {hasPerm} from "@/perm/perm.js"
 import {useI18n} from "vue-i18n";
 import {setExtend} from "@/utils/day.js"
+import {clearObjectUrls} from "@/utils/object.js"
 
 const {t} = useI18n();
 const route = useRoute();
@@ -244,6 +245,7 @@ function clickLogout() {
   logoutLoading.value = true
   logout().then(() => {
     localStorage.removeItem("token")
+    clearObjectUrls()
     router.replace('/login')
   }).finally(() => {
     logoutLoading.value = false

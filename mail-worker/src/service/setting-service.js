@@ -159,7 +159,11 @@ const settingService = {
 
 		await this.deleteBackground(c);
 
-		if (background && !background.startsWith('http')) {
+		if (background?.startsWith('http')) {
+			throw new BizError('External background URLs are not supported');
+		}
+
+		if (background) {
 
 			const file = fileUtils.base64ToFile(background)
 
@@ -204,7 +208,7 @@ const settingService = {
 			send: settingRow.send,
 			r2Domain: settingRow.r2Domain,
 			siteKey: settingRow.siteKey,
-			background: settingRow.background,
+			background: token ? settingRow.background : '',
 			loginOpacity: settingRow.loginOpacity,
 			domainList: settingRow.loginDomain === 1 && !token ? [] : settingRow.domainList,
 			regKey: settingRow.regKey,

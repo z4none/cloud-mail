@@ -111,8 +111,8 @@
                 <div>
                   <el-image
                       class="background"
-                      :src="cvtR2Url(setting.background)"
-                      :preview-src-list="[cvtR2Url(setting.background)]"
+                      :src="backgroundPreviewUrl"
+                      :preview-src-list="backgroundPreviewUrl ? [backgroundPreviewUrl] : []"
                       show-progress
                       fit="cover"
                   >
@@ -939,7 +939,8 @@ import {useUiStore} from "@/store/ui.js";
 import {useUserStore} from "@/store/user.js";
 import {useAccountStore} from "@/store/account.js";
 import {Icon} from "@iconify/vue";
-import {cvtR2Url, toOssDomain} from "@/utils/convert.js";
+import {toOssDomain} from "@/utils/convert.js";
+import {loadObjectUrl} from "@/utils/object.js";
 import {storeToRefs} from "pinia";
 import {debounce} from 'lodash-es'
 import {isDomain, isEmail, isIpUrl} from "@/utils/verify-utils.js";
@@ -960,6 +961,7 @@ const {t, locale} = useI18n();
 const firstLoading = ref(true)
 const settingReady = ref(false)
 const backgroundImage = ref('')
+const backgroundPreviewUrl = ref('')
 const localUpShow = ref(false)
 const accountStore = useAccountStore();
 const userStore = useUserStore();
@@ -1111,7 +1113,8 @@ function getSettings() {
     loginOpacity.value = setting.value.loginOpacity
     minEmailPrefix.value = setting.value.minEmailPrefix
     firstLoading.value = false
-    backgroundUrl.value = setting.value.background?.startsWith('http') ? setting.value.background : ''
+    backgroundUrl.value = ''
+    loadBackgroundPreview(setting.value.background)
     editTitle.value = setting.value.title
     r2DomainInput.value = setting.value.r2Domain
     addVerifyCount.value = setting.value.addVerifyCount
@@ -1127,6 +1130,16 @@ function getSettings() {
   })
 }
 
+
+async function loadBackgroundPreview(key) {
+  backgroundPreviewUrl.value = ''
+  if (!key || key.startsWith('http')) return
+  try {
+    backgroundPreviewUrl.value = await loadObjectUrl(key)
+  } catch {
+    backgroundPreviewUrl.value = ''
+  }
+}
 
 function openNoticePopup() {
   uiStore.showNotice()
@@ -1213,7 +1226,8 @@ const compareByLengthAndUpperCase = (a, b, key) => {
 function closedSetBackground() {
   backgroundImage.value = ''
   localUpShow.value = false
-  backgroundUrl.value = setting.value.background?.startsWith('http') ? setting.value.background : ''
+  backgroundUrl.value = ''
+  loadBackgroundPreview(setting.value.background)
 }
 
 function openTgSetting() {
@@ -1553,6 +1567,7 @@ function delBackground() {
     deleteBackground().then(() => {
       backgroundUrl.value = ''
       setting.value.background = null
+      backgroundPreviewUrl.value = ''
       ElMessage({
         message: t('delSuccessMsg'),
         type: "success",
@@ -1595,7 +1610,7 @@ async function saveBackground() {
   if (localUpShow.value) {
     image = await fileToBase64(backgroundFile, true);
   } else {
-    if (backgroundUrl.value && !backgroundUrl.value.startsWith('http')) {
+    if (backgroundUrl.value) {
       ElMessage({
         message: t('imageLinkErrorMsg'),
         type: "error",
@@ -1603,12 +1618,13 @@ async function saveBackground() {
       })
       return
     }
-    image = backgroundUrl.value
+    image = ''
   }
   settingLoading.value = true
 
   setBackground(image).then(key => {
     setting.value.background = key
+    loadBackgroundPreview(key)
     showSetBackground.value = false
     ElMessage({
       message: t('saveSuccessMsg'),

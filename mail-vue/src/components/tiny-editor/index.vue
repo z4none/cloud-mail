@@ -99,7 +99,18 @@ function initEditor() {
     content_style: `:root {
          --scrollbar-track-color: ${uiStore.dark ? '#141414' : '#FFFFFF'};
          --scrollbar-thumb-color: ${uiStore.dark ? '#8D9095' : '#A8ABB2'};
-    }`,
+    }
+    body {
+      background: ${uiStore.dark ? '#141414' : '#FFFFFF'};
+      color: ${uiStore.dark ? '#E5EAF3' : '#303133'};
+    }
+    .mceNonEditable {
+      background: ${uiStore.dark ? '#1D1E1F' : '#F5F7FA'} !important;
+      color: ${uiStore.dark ? '#E5EAF3' : '#303133'} !important;
+    }
+    .mceNonEditable, .mceNonEditable * { background-color: transparent !important; color: ${uiStore.dark ? '#E5EAF3' : '#303133'} !important; }
+    .mceNonEditable { background-color: ${uiStore.dark ? '#1D1E1F' : '#F5F7FA'} !important; }
+    .mceNonEditable a, .mceNonEditable a * { color: ${uiStore.dark ? '#79BBFF' : '#0E70DF'} !important; }`,
     plugins: 'link image advlist lists  emoticons fullscreen  table preview code',
     toolbar: 'bold emoticons forecolor backcolor italic fontsize | alignleft aligncenter alignright alignjustify | outdent indent |  bullist numlist | link image  | table code preview fullscreen',
     toolbar_mode: 'scrolling',

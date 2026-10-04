@@ -34,12 +34,15 @@ import {sleep} from "@/utils/time-utils.js";
 import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { notifyNewMail } from '@/utils/mail-notification.js'
 
 defineOptions({
   name: 'email'
 })
 
 const route = useRoute();
+const { t } = useI18n();
 const emailStore = useEmailStore();
 const accountStore = useAccountStore();
 const settingStore = useSettingStore();
@@ -101,6 +104,12 @@ async function latest() {
         //确保请求回来后，账号没有切换，时间排序没有改变，全部邮件类型没变
         if (accountId === accountStore.currentAccountId && params.timeSort === curTimeSort && allReceive === accountStore.currentAccount.allReceive) {
           if (list.length > 0) {
+            notifyNewMail({
+              emails: list,
+              t,
+              currentThreadId: emailStore.contentData.email?.threadId,
+              onOpen: jumpContent
+            })
             emailStore.applyFullList(list)
 
             for (let email of list) {

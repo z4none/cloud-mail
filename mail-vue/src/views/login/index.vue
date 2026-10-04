@@ -1,13 +1,7 @@
 <template>
   <div id="login-box" :style=" background ? 'background: var(--el-bg-color)' : ''" v-loading="oauthLoading" element-loading-text="登录中...">
-    <div id="background-wrap" v-if="!settingStore.settings.background">
-      <div class="x1 cloud"></div>
-      <div class="x2 cloud"></div>
-      <div class="x3 cloud"></div>
-      <div class="x4 cloud"></div>
-      <div class="x5 cloud"></div>
-    </div>
-    <div v-else :style="background"></div>
+    <div id="background-wrap" v-if="!settingStore.settings.background" aria-hidden="true"></div>
+    <div v-else class="custom-background" :style="background" aria-hidden="true"></div>
     <div class="form-wrapper">
       <div class="container">
         <span class="form-title">{{ settingStore.settings.title }}</span>
@@ -634,42 +628,26 @@ function submitRegister() {
 <style lang="scss" scoped>
 
 .form-wrapper {
-  position: fixed;
-  right: 0;
-  height: 100%;
+  position: relative;
   z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  @media (max-width: 767px) {
-    width: 100%;
-  }
+  width: min(420px, calc(100% - 32px));
 }
 
 .container {
   background: v-bind(loginOpacity);
-  padding-left: 40px;
-  padding-right: 40px;
+  padding: clamp(26px, 5vw, 42px);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  width: 450px;
-  height: 100%;
-  border-left: 1px solid var(--login-border);
-  box-shadow: var(--el-box-shadow-light);
-  @media (max-width: 1024px) {
-    padding: 20px 18px;
-    width: 384px;
-    margin-left: 18px;
-  }
+  width: 100%;
+  min-height: 420px;
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 14px;
+  box-shadow: 0 20px 50px color-mix(in srgb, var(--el-text-color-primary) 16%, transparent);
+  backdrop-filter: blur(8px);
   @media (max-width: 767px) {
-    border: 1px solid var(--login-border);
-    padding: 20px 18px;
-    border-radius: 6px;
-    height: fit-content;
-    width: 100%;
-    margin-right: 18px;
-    margin-left: 18px;
+    min-height: 0;
+    padding: 26px 22px;
   }
 
   .btn {
@@ -797,20 +775,80 @@ function submitRegister() {
 
 
 #login-box {
-  background: linear-gradient(to bottom, #2980b9, #6dd5fa, #fff);
-  font: 100% Arial, sans-serif;
-  height: 100%;
+  position: relative;
+  min-height: 100dvh;
   margin: 0;
-  padding: 0;
-  overflow-x: hidden;
+  padding: 24px 0;
+  overflow: hidden;
   display: grid;
-  grid-template-columns: 1fr;
+  place-items: center;
+  background: var(--settings-page-background);
 }
 
+#background-wrap,
+.custom-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
 
 #background-wrap {
-  height: 100%;
-  z-index: 0;
+  background-color: var(--settings-page-background);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--el-text-color-primary) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--el-text-color-primary) 4%, transparent) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+#background-wrap::before,
+#background-wrap::after {
+  content: '';
+  position: absolute;
+  width: min(72vw, 900px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(24px);
+  opacity: 0.72;
+  will-change: transform, opacity;
+}
+
+#background-wrap::before {
+  top: -42%;
+  left: -20%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--el-color-primary) 24%, transparent), transparent 66%);
+  animation: drift-primary 22s ease-in-out infinite alternate;
+}
+
+#background-wrap::after {
+  right: -30%;
+  bottom: -48%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--el-color-primary) 17%, var(--el-bg-color)), transparent 67%);
+  animation: drift-secondary 19s ease-in-out infinite alternate;
+}
+
+.custom-background {
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+
+@keyframes drift-primary {
+  from { transform: translate3d(0, 0, 0) scale(1); opacity: 0.58; }
+  to { transform: translate3d(12%, 9%, 0) scale(1.12); opacity: 0.82; }
+}
+
+@keyframes drift-secondary {
+  from { transform: translate3d(0, 0, 0) scale(1.08); opacity: 0.46; }
+  to { transform: translate3d(-13%, -10%, 0) scale(0.94); opacity: 0.7; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #background-wrap::before,
+  #background-wrap::after {
+    animation: none;
+  }
 }
 
 @keyframes animateCloud {

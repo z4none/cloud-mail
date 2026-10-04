@@ -25,6 +25,7 @@
 - [complete] Phase 5D：线程测试与构建验证
 - [complete] Phase 6：会话详情卡片化与双主题视觉优化
 - [complete] Phase 6：前端构建验证
+- [complete] Phase 7：居中登录框与低干扰背景动效（前端 release 构建通过）
 
 ## 关键决策
 

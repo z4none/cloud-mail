@@ -42,6 +42,17 @@
             <el-alert v-if="message.status === 4" :closable="false" :title="$t('complained')" class="email-msg" type="warning" show-icon />
             <el-alert v-if="message.status === 5" :closable="false" :title="$t('delayed')" class="email-msg" type="warning" show-icon />
             </div>
+            <div class="message-actions">
+              <button v-if="emailStore.contentData.showReply" v-perm="'email:send'" type="button" :title="$t('reply')" @click="openReply(message)">
+                <Icon icon="la:reply" width="18" height="18" />
+              </button>
+              <button v-if="emailStore.contentData.showReply" v-perm="'email:send'" type="button" :title="$t('forward')" @click="openForward(message)">
+                <Icon icon="iconoir:arrow-up-right" width="17" height="17" />
+              </button>
+              <button v-perm="'email:delete'" type="button" :title="$t('delete')" @click="handleDelete(message)">
+                <Icon icon="uiw:delete" width="15" height="15" />
+              </button>
+            </div>
           </div>
           <el-scrollbar class="htm-scrollbar" :class="!message.attList?.length ? 'bottom-distance' : ''">
             <ShadowHtml class="shadow-html" :html="formatImage(message.content)" v-if="message.content" />
@@ -202,12 +213,12 @@ function handleKeyDown(event) {
   handleBack();
 }
 
-function openReply() {
-  uiStore.writerRef.openReply(email.value)
+function openReply(message = email.value) {
+  uiStore.writerRef.openReply(message)
 }
 
-function openForward() {
-  uiStore.writerRef.openForward(email.value)
+function openForward(message = email.value) {
+  uiStore.writerRef.openForward(message)
 }
 
 function toMessage(message) {
@@ -278,34 +289,36 @@ const handleBack = () => {
   router.back()
 }
 
-const handleDelete = () => {
+const handleDelete = (message = email.value) => {
   ElMessageBox.confirm(t('delEmailConfirm'), {
     confirmButtonText: t('confirm'),
     cancelButtonText: t('cancel'),
     type: 'warning'
   }).then(() => {
     if (emailStore.contentData.delType === 'logic') {
-      emailDelete(email.value.emailId).then(() => {
+      emailDelete(message.emailId).then(() => {
         ElMessage({
           message: t('delSuccessMsg'),
           type: 'success',
           plain: true,
         })
-        emailStore.deleteIds = [email.value.emailId]
+        emailStore.deleteIds = [message.emailId]
+        threadEmails.value = threadEmails.value.filter(item => item.emailId !== message.emailId)
       })
     } else  {
 
-      allEmailDelete(email.value.emailId).then(() => {
+      allEmailDelete(message.emailId).then(() => {
         ElMessage({
           message: t('delSuccessMsg'),
           type: 'success',
           plain: true,
         })
-        emailStore.deleteIds = [email.value.emailId]
+        emailStore.deleteIds = [message.emailId]
+        threadEmails.value = threadEmails.value.filter(item => item.emailId !== message.emailId)
       })
     }
 
-    router.back()
+    if (message.emailId === email.value.emailId) router.back()
   })
 }
 </script>
@@ -498,9 +511,44 @@ const handleDelete = () => {
         min-width: 0;
         flex: 1;
       }
+
+      .message-actions {
+        display: flex;
+        gap: 2px;
+        align-self: flex-start;
+        opacity: 0.68;
+        transition: opacity 160ms ease-out;
+
+        button {
+          width: 30px;
+          height: 30px;
+          display: grid;
+          place-items: center;
+          border: 0;
+          border-radius: 7px;
+          color: var(--secondary-text-color);
+          background: transparent;
+          cursor: pointer;
+
+          &:hover, &:focus-visible {
+            color: var(--el-color-primary);
+            background: color-mix(in srgb, var(--el-color-primary) 10%, transparent);
+            outline: none;
+          }
+        }
+      }
+
+      &:hover .message-actions, .message-actions:focus-within {
+        opacity: 1;
+      }
+
       @media (max-width: 1024px) {
         gap: 10px;
         margin-bottom: 15px;
+
+        .message-actions {
+          opacity: 1;
+        }
       }
       .date {
         color: var(--secondary-text-color);

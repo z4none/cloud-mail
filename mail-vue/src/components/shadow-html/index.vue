@@ -89,11 +89,11 @@ async function updateContent() {
 
   shadowRoot.innerHTML = `
     <style>
-      :host { all: initial; width: 100%; height: 100%; font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif; font-size: 14px; line-height: 1.5; color: #13181D; word-break: break-word; }
+      :host { all: initial; width: 100%; height: 100%; font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif; font-size: 14px; line-height: 1.5; color: var(--el-text-color-primary); word-break: break-word; }
       h1, h2, h3, h4 { font-size: 18px; font-weight: 700; }
       p { margin: 0; }
-      a { text-decoration: none; color: #0E70DF; }
-      .shadow-content { background: #FFFFFF; width: fit-content; height: fit-content; min-width: 100%; }
+      a { text-decoration: none; color: var(--el-color-primary); }
+      .shadow-content { background: transparent; width: fit-content; height: fit-content; min-width: 100%; }
       img:not(table img) { max-width: 100%; height: auto !important; }
     </style>
     <div class="shadow-content"></div>

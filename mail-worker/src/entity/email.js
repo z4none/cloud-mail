@@ -17,6 +17,7 @@ export const email = sqliteTable('email', {
 	toName: text('to_name').default('').notNull(),
 	inReplyTo: text('in_reply_to').default(''),
 	relation: text('relation').default(''),
+	threadId: text('thread_id').default('').notNull(),
 	messageId: text('message_id').default(''),
 	type: integer('type').default(0).notNull(),
 	status: integer('status').default(0).notNull(),

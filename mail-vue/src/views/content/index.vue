@@ -16,36 +16,36 @@
         <div class="email-title">
           {{ email.subject }}
         </div>
-        <div class="content">
+        <div class="content" v-for="message in displayedEmails" :key="message.emailId">
           <div class="email-info">
             <div>
               <div class="send"><span class="send-source">{{$t('from')}}</span>
                 <div class="send-name">
-                  <span class="send-name-title">{{ email.name }}</span>
-                  <span><{{ email.sendEmail }}></span>
+                  <span class="send-name-title">{{ message.name }}</span>
+                  <span><{{ message.sendEmail }}></span>
                 </div>
               </div>
-              <div class="receive"><span class="source">{{$t('recipient')}}</span><span class="receive-email">{{  formateReceive(email.recipient) }}</span></div>
+              <div class="receive"><span class="source">{{$t('recipient')}}</span><span class="receive-email">{{  formateReceive(message.recipient) }}</span></div>
               <div class="date">
-                <div>{{ formatDetailDate(email.createTime) }}</div>
+                <div>{{ formatDetailDate(message.createTime) }}</div>
               </div>
             </div>
-            <el-alert v-if="email.status === 3" :closable="false" :title="toMessage(email.message)" class="email-msg" type="error" show-icon />
-            <el-alert v-if="email.status === 4" :closable="false" :title="$t('complained')" class="email-msg" type="warning" show-icon />
-            <el-alert v-if="email.status === 5" :closable="false" :title="$t('delayed')" class="email-msg" type="warning" show-icon />
+            <el-alert v-if="message.status === 3" :closable="false" :title="toMessage(message.message)" class="email-msg" type="error" show-icon />
+            <el-alert v-if="message.status === 4" :closable="false" :title="$t('complained')" class="email-msg" type="warning" show-icon />
+            <el-alert v-if="message.status === 5" :closable="false" :title="$t('delayed')" class="email-msg" type="warning" show-icon />
           </div>
-          <el-scrollbar class="htm-scrollbar" :class="!email.attList?.length ? 'bottom-distance' : ''">
-            <ShadowHtml class="shadow-html" :html="formatImage(email.content)" v-if="email.content" />
-            <pre v-else class="email-text" >{{email.text}}</pre>
+          <el-scrollbar class="htm-scrollbar" :class="!message.attList?.length ? 'bottom-distance' : ''">
+            <ShadowHtml class="shadow-html" :html="formatImage(message.content)" v-if="message.content" />
+            <pre v-else class="email-text" >{{message.text}}</pre>
           </el-scrollbar>
-          <div class="att" v-if="email.attList?.length > 0">
+          <div class="att" v-if="message.attList?.length > 0">
             <div class="att-title">
               <span>{{$t('attachments')}}</span>
-              <span>{{$t('attCount',{total: email.attList.length})}}</span>
+              <span>{{$t('attCount',{total: message.attList.length})}}</span>
             </div>
             <div class="att-box">
 
-              <div class="att-item" v-for="att in email.attList" :key="att.attId">
+              <div class="att-item" v-for="att in message.attList" :key="att.attId">
                 <div class="att-icon" @click="showImage(att.key)">
                   <Icon v-bind="getIconByName(att.filename)" />
                 </div>
@@ -78,7 +78,7 @@ import ShadowHtml from '@/components/shadow-html/index.vue'
 import {computed, reactive, ref, watch, onMounted, onUnmounted} from "vue";
 import {useRouter} from 'vue-router'
 import {ElMessage, ElMessageBox} from 'element-plus'
-import {emailDelete, emailRead} from "@/request/email.js";
+import {emailDelete, emailRead, emailThread} from "@/request/email.js";
 import {Icon} from "@iconify/vue";
 import {useEmailStore} from "@/store/email.js";
 import {useAccountStore} from "@/store/account.js";
@@ -105,8 +105,30 @@ const email = computed(() => emailStore.contentData.email || {
 })
 const showPreview = ref(false)
 const srcList = reactive([])
+const threadEmails = ref([])
+const displayedEmails = computed(() => threadEmails.value.length ? threadEmails.value : [email.value])
 
 const { t } = useI18n()
+
+async function loadThread(emailId) {
+  if (!emailId) {
+    threadEmails.value = []
+    return
+  }
+  try {
+    const list = await emailThread(emailId)
+    threadEmails.value = Array.isArray(list) ? list : []
+    for (const item of threadEmails.value) {
+      item.attList ||= []
+      emailStore.detailMap[item.emailId] = item
+    }
+  } catch (error) {
+    console.error(error)
+    threadEmails.value = []
+  }
+}
+
+watch(() => email.value?.emailId, loadThread, { immediate: true })
 watch(() => accountStore.currentAccountId, () => {
   handleBack()
 })
@@ -325,6 +347,8 @@ const handleDelete = () => {
   .content {
     display: flex;
     flex-direction: column;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--el-border-color-lighter);
 
     .att {
       margin-top: 30px;

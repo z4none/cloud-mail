@@ -32,8 +32,46 @@ const dbInit = {
 		await this.v3_1DB(c);
 		await this.v3_2DB(c);
 		await this.v3_3DB(c);
+		await this.v3_4DB(c);
 		await settingService.refresh(c);
 		return c.text('success');
+	},
+
+	async v3_4DB(c) {
+		try {
+			await c.env.db.prepare(`ALTER TABLE email ADD COLUMN thread_id TEXT NOT NULL DEFAULT '';`).run();
+		} catch (e) {
+			console.warn(`跳过会话字段：${e.message}`);
+		}
+		await c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_email_thread ON email(user_id, account_id, thread_id, email_id)`).run();
+		await this.backfillThreadIds(c);
+	},
+
+	async backfillThreadIds(c) {
+		const rows = await c.env.db.prepare(`
+			SELECT email_id, user_id, account_id, subject, in_reply_to, relation, message_id, resend_email_id, thread_id
+			FROM email WHERE thread_id = '' ORDER BY user_id, account_id, create_time, email_id
+		`).all();
+		const messages = new Map();
+		const subjects = new Map();
+		const updates = [];
+
+		for (const row of rows.results || []) {
+			const scope = `${row.user_id}:${row.account_id}`;
+			const refs = `${row.in_reply_to || ''} ${row.relation || ''}`.match(/<[^>]+>|[^\s,]+/g) || [];
+			let threadId = refs.map(ref => messages.get(`${scope}:${ref}`)).find(Boolean);
+			const subject = (row.subject || '').replace(/^(\s*(re|fw|fwd|回复)\s*[:：]\s*)+/i, '').trim().toLowerCase();
+			if (!threadId && subject) threadId = subjects.get(`${scope}:${subject}`);
+			if (!threadId) threadId = `legacy-${row.email_id}`;
+
+			updates.push(c.env.db.prepare(`UPDATE email SET thread_id = ? WHERE email_id = ?`).bind(threadId, row.email_id));
+			for (const id of [row.message_id, row.resend_email_id].filter(Boolean)) messages.set(`${scope}:${id}`, threadId);
+			if (subject) subjects.set(`${scope}:${subject}`, threadId);
+		}
+
+		for (let index = 0; index < updates.length; index += 100) {
+			await c.env.db.batch(updates.slice(index, index + 100));
+		}
 	},
 
 	async v3_3DB(c) {

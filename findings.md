@@ -26,6 +26,7 @@
 - 部署失败日志显示 `KV namespace 'cloud-mail-test' is not valid`，说明 KV 名称被当作 namespace ID 使用；Workflow 原先只判断非空，不校验 ID 格式。
 - 后续 Action 日志显示 Worker 上传、绑定和数据库初始化均成功；唯一错误来自 `GitRML/delete-workflow-runs` 清理步骤缺少 Actions 写权限，与部署无关。
 - 回复邮件引用头由 `layout/write/index.vue` 生成，并复用了会按界面语言输出中文的 `formatDetailDate`；使用专用固定格式可避免改变其他日期展示。
+- Gmail 风格会话使用 `email.thread_id` 持久化；新邮件先用标准回复头精确关联，仅在缺失关联时按同用户、同账户及规范化主题回退。旧数据在 `/api/init` 迁移时回填，收件箱显示线程计数，详情通过 `/api/email/thread` 读取完整按时间排序的往来。
 
 ## 已实施发现
 

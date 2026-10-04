@@ -26,3 +26,4 @@
 - 已验证：有效 KV/D1 ID 通过，`cloud-mail-test` 作为 KV ID 被拒绝。
 - 根据 Action 日志确认 Worker 部署和数据库初始化成功；移除无关且权限不足的 Workflow 记录清理 Action，避免部署结果被清理失败干扰。
 - 将新回复的引用头固定为英文 `On YYYY-MM-DD HH:mm, name <email> wrote:`，并新增专用时间格式化函数；前端 release 构建通过。
+- 用户确认 Gmail 风格会话线程设计，设计文档已提交为 `242c157`；Phase 5 已完成：`thread_id` 迁移及历史回填、标准回复头优先关联和主题回退、收件箱按线程聚合、会话详情展示完整往来、自动刷新防重复；Worker 7 项测试和前端 release 构建均通过。

@@ -109,10 +109,20 @@ async function latest() {
               email.allReceive = allReceive;
 
               if (!existIds.has(email.emailId)) {
-
                 existIds.add(email.emailId)
-                scroll.value.addItem(email)
+                const existingThread = scroll.value.emailList?.find(item =>
+                  item.threadId && item.threadId === email.threadId
+                )
 
+                if (existingThread) {
+                  Object.assign(existingThread, email, {
+                    threadCount: (existingThread.threadCount || 1) + 1,
+                    threadUnreadCount: (existingThread.threadUnreadCount || 0) + 1
+                  })
+                  continue
+                }
+
+                scroll.value.addItem(email)
                 await sleep(50)
               }
 

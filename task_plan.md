@@ -19,6 +19,10 @@
 - [complete] Phase 3B：本地 Worker/前端生产流程验证
 - [complete] Phase 3C：存储兼容性和安全回归测试
 - [complete] Phase 4：统一 GitHub Actions 部署并移除基础设施自动创建
+- [complete] Phase 5A：线程数据迁移与后端关联逻辑
+- [complete] Phase 5B：线程列表与详情 API
+- [complete] Phase 5C：收件箱与会话详情界面
+- [complete] Phase 5D：线程测试与构建验证
 
 ## 关键决策
 

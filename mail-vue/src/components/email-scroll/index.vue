@@ -89,6 +89,7 @@
                           {{ item.subject || '\u200B' }}
                         </slot>
                       </span>
+                      <span v-if="item.threadCount > 1" class="thread-count">({{ item.threadCount }})</span>
                     </span>
                     <span class="email-content">{{ item.listText || item.text || '\u200B' }}</span>
                   </div>
@@ -1184,6 +1185,12 @@ function loadData() {
         white-space: nowrap;
         text-overflow: ellipsis;
         min-width: 0;
+      }
+
+      .thread-count {
+        flex: 0 0 auto;
+        margin-left: 4px;
+        color: var(--el-color-primary);
       }
 
       .email-content {

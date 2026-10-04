@@ -4,6 +4,7 @@ import worker from '../src';
 import jwtUtils from '../src/utils/jwt-utils';
 import rateLimitService from '../src/service/rate-limit-service';
 import r2Service from '../src/service/r2-service';
+import emailService from '../src/service/email-service';
 
 const context = { env: { jwt_secret: 'test-secret' } };
 
@@ -43,6 +44,19 @@ describe('storage selection', () => {
 		expect(await r2Service.storageType(withSetting({ bucket: 'bucket', endpoint: 'https://s3.example.com', s3AccessKey: 'key', s3SecretKey: 'secret' }, { r2: {} }))).toBe('S3');
 		expect(await r2Service.storageType(withSetting({ bucket: '', endpoint: '', s3AccessKey: '', s3SecretKey: '' }, { r2: {} }))).toBe('R2');
 		expect(await r2Service.storageType(withSetting({ bucket: '', endpoint: '', s3AccessKey: '', s3SecretKey: '' }))).toBe('KV');
+	});
+});
+
+describe('email thread matching', () => {
+	it('normalizes reply and forward prefixes before subject fallback', () => {
+		expect(emailService.normalizeThreadSubject('Re: 回复： Fwd: Project update')).toBe('project update');
+	});
+
+	it('extracts every RFC reply reference for exact matching', () => {
+		expect(emailService.threadReferenceIds({
+			inReplyTo: '<first@example.test>',
+			relation: '<first@example.test> <second@example.test>'
+		})).toEqual(['<first@example.test>', '<second@example.test>']);
 	});
 });
 

@@ -94,9 +94,10 @@ const emailService = {
 			query.orderBy(desc(email.emailId));
 		}
 
-		const listQuery = query.limit(size).all();
+		// Fetch extra rows because several messages can collapse into one conversation.
+		const listQuery = query.limit(size * 5).all();
 
-		const totalQuery = orm(c).select({ total: count() }).from(email)
+		const totalQuery = orm(c).select({ total: sql`count(DISTINCT ${email.threadId})` }).from(email)
 			.innerJoin(
 				account,
 				eq(account.accountId, email.accountId)
@@ -123,6 +124,8 @@ const emailService = {
 			...item,
 			isStar: item.starId != null ? 1 : 0
 		}));
+		list = await this.summarizeThreads(c, list, userId);
+		list = list.slice(0, size);
 
 		if (full) {
 			await this.emailAddAtt(c, list);
@@ -141,6 +144,32 @@ const emailService = {
 		return { list, total: totalRow.total, latestEmail };
 	},
 
+	async summarizeThreads(c, list, userId) {
+		if (!list.length) return list;
+		const threadIds = [...new Set(list.map(item => item.threadId).filter(Boolean))];
+		const totals = threadIds.length ? await orm(c).select({
+			threadId: email.threadId,
+			messageCount: count(),
+			unreadCount: sql`sum(CASE WHEN ${email.unread} = ${emailConst.unread.UNREAD} THEN 1 ELSE 0 END)`
+		}).from(email).where(and(
+			eq(email.userId, userId),
+			inArray(email.threadId, threadIds),
+			eq(email.isDel, isDel.NORMAL)
+		)).groupBy(email.threadId).all() : [];
+		const metadata = new Map(totals.map(item => [item.threadId, item]));
+		const seen = new Set();
+		return list.filter(item => {
+			const threadId = item.threadId || `legacy-${item.emailId}`;
+			if (seen.has(threadId)) return false;
+			seen.add(threadId);
+			const total = metadata.get(threadId);
+			item.threadId = threadId;
+			item.threadCount = Number(total?.messageCount || 1);
+			item.threadUnreadCount = Number(total?.unreadCount || 0);
+			return true;
+		});
+	},
+
 	toListText(item) {
 		const raw = emailUtils.formatText(item.text) || emailUtils.htmlToText(item.content);
 		return raw.replace(/\s+/g, ' ').trim().slice(0, EMAIL_LIST_TEXT_LEN);
@@ -153,6 +182,52 @@ const emailService = {
 			delete item.content;
 		}
 		return list;
+	},
+
+	normalizeThreadSubject(subject) {
+		return (subject || '').replace(/^(\s*(re|fw|fwd|回复)\s*[:：]\s*)+/i, '').trim().toLowerCase();
+	},
+
+	threadReferenceIds(params) {
+		return [...new Set(`${params.inReplyTo || ''} ${params.relation || ''}`
+			.match(/<[^>]+>|[^\s,]+/g) || [])];
+	},
+
+	newThreadId() {
+		return crypto.randomUUID();
+	},
+
+	async ensureThreadId(c, emailRow) {
+		if (emailRow.threadId) return emailRow.threadId;
+		const threadId = this.newThreadId();
+		await orm(c).update(email).set({ threadId }).where(eq(email.emailId, emailRow.emailId)).run();
+		emailRow.threadId = threadId;
+		return threadId;
+	},
+
+	async resolveThreadId(c, params) {
+		const scope = and(
+			eq(email.userId, params.userId),
+			eq(email.accountId, params.accountId),
+			eq(email.isDel, isDel.NORMAL)
+		);
+		const references = this.threadReferenceIds(params);
+		if (references.length) {
+			const linked = await orm(c).select().from(email).where(and(
+				scope,
+				or(inArray(email.messageId, references), inArray(email.resendEmailId, references))
+			)).orderBy(desc(email.emailId)).limit(1).get();
+			if (linked) return this.ensureThreadId(c, linked);
+		}
+
+		const subject = this.normalizeThreadSubject(params.subject);
+		if (subject) {
+			const candidates = await orm(c).select().from(email).where(scope)
+				.orderBy(desc(email.emailId)).limit(100).all();
+			const matched = candidates.find(item => this.normalizeThreadSubject(item.subject) === subject);
+			if (matched) return this.ensureThreadId(c, matched);
+		}
+		return this.newThreadId();
 	},
 
 	emailListFilters({ userId, accountId, type, allReceive, emailId, timeSort, withCursor = true }) {
@@ -241,8 +316,9 @@ const emailService = {
 			.run();
 	},
 
-	receive(c, params, cidAttList, r2domain) {
+	async receive(c, params, cidAttList, r2domain) {
 		params.content = this.imgReplace(params.content, cidAttList, r2domain)
+		params.threadId = await this.resolveThreadId(c, params);
 		return orm(c).insert(email).values({ ...params }).returning().get();
 	},
 
@@ -356,6 +432,7 @@ const emailService = {
 		}
 
 		let sendResult = {};
+		const outboundMessageId = `<${this.newThreadId()}@${emailUtils.getDomain(accountRow.email)}>`;
 
 		//存在站外邮箱时，如果配置了 Cloudflare Email Service 就优先使用，否则使用 Resend
 		if (!allInternal) {
@@ -370,7 +447,8 @@ const emailService = {
 					html,
 					attachments: [...imageDataList, ...attachments],
 					sendType,
-					messageId: emailRow.messageId
+					messageId: emailRow.messageId,
+					outboundMessageId
 				});
 			} else {
 				sendResult = await this.sendByResend(resendToken, {
@@ -382,7 +460,8 @@ const emailService = {
 					html,
 					attachments: [...imageDataList, ...attachments],
 					sendType,
-					messageId: emailRow.messageId
+					messageId: emailRow.messageId,
+					outboundMessageId
 				});
 			}
 
@@ -400,6 +479,10 @@ const emailService = {
 		//把图片标签cid标签切换会通用url
 		html = this.imgReplace(html, imageDataList, r2Domain);
 
+		const threadId = sendType === 'reply'
+			? await this.ensureThreadId(c, emailRow)
+			: this.newThreadId();
+
 		//封装数据保存到数据库
 		const emailData = {};
 		emailData.sendEmail = accountRow.email;
@@ -411,6 +494,8 @@ const emailService = {
 		emailData.status = useCloudflareEmail ? emailConst.status.DELIVERED : emailConst.status.SENT;
 		emailData.type = emailConst.type.SEND;
 		emailData.userId = userId;
+		emailData.threadId = threadId;
+		emailData.messageId = outboundMessageId;
 		emailData.resendEmailId = data?.id;
 
 		const recipient = [];
@@ -476,7 +561,8 @@ const emailService = {
 		const sendForm = {
 			from: { email: params.accountEmail, name: params.name },
 			to: [...params.receiveEmail],
-			subject: params.subject
+			subject: params.subject,
+			headers: { 'message-id': params.outboundMessageId }
 		};
 
 		if (params.text) {
@@ -493,10 +579,8 @@ const emailService = {
 		}
 
 		if (params.sendType === 'reply' && params.messageId) {
-			sendForm.headers = {
-				'in-reply-to': params.messageId,
-				'references': params.messageId
-			};
+			sendForm.headers['in-reply-to'] = params.messageId;
+			sendForm.headers.references = params.messageId;
 		}
 
 		const result = await c.env.email.send(sendForm);
@@ -517,14 +601,13 @@ const emailService = {
 			subject: params.subject,
 			text: params.text,
 			html: params.html,
-			attachments: await this.toResendAttachments(params.attachments)
+			attachments: await this.toResendAttachments(params.attachments),
+			headers: { 'message-id': params.outboundMessageId }
 		};
 
-		if (params.sendType === 'reply') {
-			sendForm.headers = {
-				'in-reply-to': params.messageId,
-				'references': params.messageId
-			};
+		if (params.sendType === 'reply' && params.messageId) {
+			sendForm.headers['in-reply-to'] = params.messageId;
+			sendForm.headers.references = params.messageId;
 		}
 
 		return await resend.emails.send(sendForm);
@@ -815,6 +898,25 @@ const emailService = {
 		})
 
 		return document.toString();
+	},
+
+	async thread(c, emailId, userId) {
+		const root = await orm(c).select().from(email).where(and(
+			eq(email.emailId, emailId),
+			eq(email.userId, userId),
+			eq(email.isDel, isDel.NORMAL)
+		)).get();
+		if (!root) throw new BizError(t('notExistEmailReply'), 404);
+
+		const threadId = await this.ensureThreadId(c, root);
+		const list = await orm(c).select().from(email).where(and(
+			eq(email.userId, userId),
+			eq(email.accountId, root.accountId),
+			eq(email.threadId, threadId),
+			eq(email.isDel, isDel.NORMAL)
+		)).orderBy(asc(email.createTime), asc(email.emailId)).all();
+		await this.emailAddAtt(c, list);
+		return list;
 	},
 
 	selectById(c, emailId) {

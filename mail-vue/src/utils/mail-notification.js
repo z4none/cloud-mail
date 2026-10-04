@@ -66,6 +66,7 @@ export function notifyNewMail({ emails, t, onOpen, currentThreadId }) {
 }
 
 export function requestMailNotificationPermission() {
-  if (!('Notification' in window) || Notification.permission !== 'default') return
+  if (!('Notification' in window) || Notification.permission !== 'default' || permissionRequested) return
+  permissionRequested = true
   Notification.requestPermission().catch(() => {})
 }

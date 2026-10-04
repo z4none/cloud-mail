@@ -29,6 +29,11 @@
 - [complete] Phase 8A：新邮件页面内通知与浏览器通知
 - [complete] Phase 8B：通知去重、会话跳转与权限降级验证
 
+## Errors Encountered
+| Error | Attempt | Resolution |
+|---|---|---|
+| Bash quoting error in static check | 1 | Replaced nested quote check with grep-based verification; no code issue |
+
 ## 关键决策
 
 - 所有对象私有：附件、内嵌图片、登录背景、其他上传对象都必须鉴权。

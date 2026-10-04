@@ -35,7 +35,7 @@ import router from "@/router/index.js";
 import {Icon} from "@iconify/vue";
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { notifyNewMail } from '@/utils/mail-notification.js'
+import { notifyNewMail, requestMailNotificationPermission } from '@/utils/mail-notification.js'
 
 defineOptions({
   name: 'email'
@@ -60,6 +60,10 @@ onMounted(() => {
 watch(() => accountStore.currentAccountId, () => {
   scroll.value.refreshList();
 })
+
+watch(() => Number(settingStore.settings.autoRefresh), (value) => {
+  if (value > 1) requestMailNotificationPermission()
+}, { immediate: true })
 
 function changeTimeSort() {
   params.timeSort = params.timeSort ? 0 : 1

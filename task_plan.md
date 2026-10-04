@@ -23,6 +23,8 @@
 - [complete] Phase 5B：线程列表与详情 API
 - [complete] Phase 5C：收件箱与会话详情界面
 - [complete] Phase 5D：线程测试与构建验证
+- [complete] Phase 6：会话详情卡片化与双主题视觉优化
+- [complete] Phase 6：前端构建验证
 
 ## 关键决策
 

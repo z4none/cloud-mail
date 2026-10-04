@@ -16,8 +16,16 @@
         <div class="email-title">
           {{ email.subject }}
         </div>
-        <div class="content" v-for="message in displayedEmails" :key="message.emailId">
+        <div
+            v-for="message in displayedEmails"
+            :key="message.emailId"
+            :class="['content', { 'is-sent': message.type === 1, 'is-latest': message.emailId === latestMessageId }]"
+        >
           <div class="email-info">
+            <div class="message-avatar" :aria-label="message.name || message.sendEmail">
+              {{ senderInitial(message) }}
+            </div>
+            <div class="message-meta">
             <div>
               <div class="send"><span class="send-source">{{$t('from')}}</span>
                 <div class="send-name">
@@ -33,6 +41,7 @@
             <el-alert v-if="message.status === 3" :closable="false" :title="toMessage(message.message)" class="email-msg" type="error" show-icon />
             <el-alert v-if="message.status === 4" :closable="false" :title="$t('complained')" class="email-msg" type="warning" show-icon />
             <el-alert v-if="message.status === 5" :closable="false" :title="$t('delayed')" class="email-msg" type="warning" show-icon />
+            </div>
           </div>
           <el-scrollbar class="htm-scrollbar" :class="!message.attList?.length ? 'bottom-distance' : ''">
             <ShadowHtml class="shadow-html" :html="formatImage(message.content)" v-if="message.content" />
@@ -107,6 +116,11 @@ const showPreview = ref(false)
 const srcList = reactive([])
 const threadEmails = ref([])
 const displayedEmails = computed(() => threadEmails.value.length ? threadEmails.value : [email.value])
+const latestMessageId = computed(() => displayedEmails.value.at(-1)?.emailId)
+
+function senderInitial(message) {
+  return (message.name || message.sendEmail || '?').trim().charAt(0).toUpperCase()
+}
 
 const { t } = useI18n()
 
@@ -327,28 +341,57 @@ const handleDelete = () => {
 
 .container {
   font-size: 14px;
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: 10px;
+  min-height: 100%;
+  padding: clamp(14px, 2vw, 28px);
+  background: var(--el-fill-color-lighter);
   @media (max-width: 1023px) {
-    padding-left: 15px;
-    padding-right: 15px;
+    padding: 12px;
   }
 
   .email-title {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 10px;
+    font-size: clamp(19px, 2vw, 24px);
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    margin: 2px 4px 16px;
+    color: var(--el-text-color-primary);
   }
 
   .htm-scrollbar {
   }
 
   .content {
+    position: relative;
     display: flex;
     flex-direction: column;
-    padding: 16px 0;
-    border-bottom: 1px solid var(--el-border-color-lighter);
+    margin-bottom: 14px;
+    padding: clamp(16px, 2.5vw, 26px);
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 12px;
+    background: var(--el-bg-color);
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--el-text-color-primary) 7%, transparent);
+    overflow: hidden;
+
+    &.is-latest {
+      border-color: color-mix(in srgb, var(--el-color-primary) 40%, var(--el-border-color-lighter));
+      box-shadow: 0 8px 24px color-mix(in srgb, var(--el-color-primary) 10%, transparent);
+    }
+
+    &.is-sent {
+      background: color-mix(in srgb, var(--el-color-primary) 6%, var(--el-bg-color));
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 3px;
+        background: var(--el-color-primary);
+      }
+
+      .message-avatar {
+        background: var(--el-color-primary);
+        color: var(--el-color-white);
+      }
+    }
 
     .att {
       margin-top: 30px;
@@ -432,15 +475,36 @@ const handleDelete = () => {
     }
 
     .email-info {
-
+      display: flex;
+      gap: 12px;
       border-bottom: 1px solid var(--light-border-color);
       margin-bottom: 20px;
-      padding-bottom: 8px;
+      padding-bottom: 16px;
+
+      .message-avatar {
+        flex: 0 0 36px;
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--el-fill-color-dark);
+        color: var(--el-text-color-primary);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .message-meta {
+        min-width: 0;
+        flex: 1;
+      }
       @media (max-width: 1024px) {
+        gap: 10px;
         margin-bottom: 15px;
       }
       .date {
-        color: var(--regular-text-color);
+        color: var(--secondary-text-color);
+        font-size: 12px;
         margin-bottom: 6px;
       }
 

@@ -28,11 +28,13 @@
 - [complete] Phase 7：居中登录框与低干扰背景动效（前端 release 构建通过）
 - [complete] Phase 8A：新邮件页面内通知与浏览器通知
 - [complete] Phase 8B：通知去重、会话跳转与权限降级验证
+- [complete] Phase 9：登录态失效统一清理与登录页重定向
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |---|---|---|
 | Bash quoting error in static check | 1 | Replaced nested quote check with grep-based verification; no code issue |
+| Bash quoting error in expired-session static check | 1 | Rerun the same assertion with non-conflicting shell quotes |
 
 ## 关键决策
 

@@ -8,9 +8,30 @@ let http = axios.create({
     baseURL: import.meta.env.VITE_BASE_URL
 });
 
+let handlingUnauthorized = false
+
+function handleUnauthorized(message) {
+    if (handlingUnauthorized) return
+    handlingUnauthorized = true
+    ElMessage({
+        message,
+        type: 'error',
+        plain: true,
+        grouping: true,
+        repeatNum: -4,
+    })
+    localStorage.removeItem('token')
+    clearObjectUrls()
+    if (router.currentRoute.value.path !== '/login') {
+        router.replace('/login')
+    }
+}
+
 http.interceptors.request.use(config => {
     const { lang } = useSettingStore();
-    config.headers.Authorization = `${localStorage.getItem('token')}`
+    const token = localStorage.getItem('token')
+    if (token) handlingUnauthorized = false
+    config.headers.Authorization = `${token}`
     config.headers['accept-language'] = lang
     return config
 })
@@ -22,22 +43,13 @@ http.interceptors.response.use((res) => {
             const noMsg = res.config.noMsg;
             const data = res.data
 
-            if (noMsg) {
+            if (data.code === 401) {
+                handleUnauthorized(data.message)
+                reject(data)
+            } else if (noMsg) {
 
                 data.code === 200 ? resolve(data.data) : reject(data)
 
-            } else if (data.code === 401) {
-                ElMessage({
-                    message: data.message,
-                    type: 'error',
-                    plain: true,
-                    grouping: true,
-                    repeatNum: -4,
-                })
-                localStorage.removeItem('token')
-                clearObjectUrls()
-                router.replace('/login')
-                reject(data)
             } else if (data.code === 403) {
                 ElMessage({
                     message: data.message,
@@ -72,6 +84,11 @@ http.interceptors.response.use((res) => {
         })
     },
     (error) => {
+
+        if (error.response?.status === 401) {
+            handleUnauthorized(error.response.data?.message || i18n.global.t('reqFailErrorMsg'))
+            return Promise.reject(error)
+        }
 
         if (error.status === 403) {
             location.reload();

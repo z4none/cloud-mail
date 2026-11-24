@@ -6,6 +6,10 @@ app.get('/ai/accounts', async (c) => {
 	return c.json(result.ok(await aiService.accounts(c)));
 });
 
+app.post('/ai/drafts', async (c) => {
+	return c.json(result.ok(await aiService.createDraft(c, await c.req.json())));
+});
+
 app.get('/ai/emails', async (c) => {
 	return c.json(result.ok(await aiService.search(c, c.req.query())));
 });

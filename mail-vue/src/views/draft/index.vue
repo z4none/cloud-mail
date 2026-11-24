@@ -30,6 +30,7 @@ import {defineOptions, ref, watch, toRaw} from "vue";
 import {useUiStore} from "@/store/ui.js";
 import {userDraftStore} from "@/store/draft.js";
 import db from "@/db/db.js"
+import {draftDelete as deleteServerDraft, draftList} from "@/request/draft.js";
 
 defineOptions({
   name: 'draft'
@@ -69,23 +70,35 @@ watch(() => draftStore.refreshList, async () => {
     scroll.value.emailList.push(...list)
 })
 
-function getEmailList() {
-  return new Promise((resolve, reject) => {
-    db.value.draft.orderBy('createTime').reverse().toArray().then(list => {
-      resolve({list})
-    })
-  })
+async function getEmailList() {
+  const local = await db.value.draft.orderBy('createTime').reverse().toArray()
+  let server = []
+  try {
+    server = await draftList()
+  } catch {
+    server = []
+  }
+  const list = [...server, ...local].sort((left, right) => String(right.createTime).localeCompare(String(left.createTime)))
+  return { list }
 }
 
-async function deleteDraft(draftIds) {
-  await db.value.draft.bulkDelete(draftIds);
+async function deleteDraft(items) {
+  const selected = Array.isArray(items) ? items : []
+  const localIds = selected.map(item => item.draftId).filter(Boolean)
+  const serverIds = selected.map(item => item.serverDraftId).filter(Boolean)
+  if (localIds.length) await db.value.draft.bulkDelete(localIds)
+  await Promise.all(serverIds.map(id => deleteServerDraft(id)))
   draftStore.refreshList++
 }
 
 async function jumpContent(email) {
-  const att = await db.value.att.get(email.draftId)
-  email.attachments = att.attachments
-  uiStore.writerRef.openDraft(email);
+  if (!email.serverDraftId) {
+    const att = await db.value.att.get(email.draftId)
+    email.attachments = att?.attachments || []
+    uiStore.writerRef.openDraft(email)
+    return
+  }
+  uiStore.writerRef.openDraft({ ...email, draftId: null });
 }
 
 </script>

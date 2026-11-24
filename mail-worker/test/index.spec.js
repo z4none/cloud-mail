@@ -7,6 +7,7 @@ import r2Service from '../src/service/r2-service';
 import emailService from '../src/service/email-service';
 import aiService from '../src/service/ai-service';
 import settingService from '../src/service/setting-service';
+import draftService from '../src/service/draft-service';
 
 const context = { env: { jwt_secret: 'test-secret' } };
 
@@ -102,6 +103,17 @@ describe('AI mailbox access', () => {
 
 	it('builds an English reply subject without changing the message body', () => {
 		expect(aiService.replySubject('回复：Invoice')).toBe('Re: Invoice');
+	});
+});
+
+describe('server drafts', () => {
+	it('rejects an invalid draft recipient and keeps a valid address', () => {
+		expect(draftService.recipients(['person@example.com'])).toEqual(['person@example.com']);
+		expect(() => draftService.recipients(['not-an-email'])).toThrowError('Recipient email is invalid');
+	});
+
+	it('uses an English reply subject for a saved reply draft', () => {
+		expect(draftService.replySubject('转发：Invoice')).toBe('Re: Invoice');
 	});
 });
 

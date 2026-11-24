@@ -34,8 +34,28 @@ const dbInit = {
 		await this.v3_3DB(c);
 		await this.v3_4DB(c);
 		await this.v3_5DB(c);
+		await this.v3_6DB(c);
 		await settingService.refresh(c);
 		return c.text('success');
+	},
+
+	async v3_6DB(c) {
+		await c.env.db.batch([
+			c.env.db.prepare(`CREATE TABLE IF NOT EXISTS mail_draft (
+				draft_id INTEGER PRIMARY KEY AUTOINCREMENT,
+				user_id INTEGER NOT NULL,
+				account_id INTEGER NOT NULL,
+				receive_email TEXT NOT NULL DEFAULT '[]',
+				subject TEXT NOT NULL DEFAULT '',
+				content TEXT NOT NULL DEFAULT '',
+				text TEXT NOT NULL DEFAULT '',
+				send_type TEXT NOT NULL DEFAULT '',
+				reply_email_id INTEGER NOT NULL DEFAULT 0,
+				create_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				update_time TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+			)`),
+			c.env.db.prepare(`CREATE INDEX IF NOT EXISTS idx_mail_draft_user ON mail_draft(user_id, draft_id)`)
+		]);
 	},
 
 	async v3_5DB(c) {

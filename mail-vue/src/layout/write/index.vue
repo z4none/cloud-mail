@@ -108,6 +108,7 @@ import {toOssDomain} from "@/utils/convert.js";
 import {formatReplyDate} from "@/utils/day.js";
 import {useSettingStore} from "@/store/setting.js";
 import {userDraftStore} from "@/store/draft.js";
+import {draftDelete, draftUpdate} from "@/request/draft.js";
 import {useWriterStore} from "@/store/writer.js";
 import db from "@/db/db.js";
 import dayjs from "dayjs";
@@ -157,6 +158,7 @@ const form = reactive({
   emailId: 0,
   attachments: [],
   draftId: null,
+  serverDraftId: null,
 })
 
 const selectRecipientList = ref([])
@@ -368,6 +370,8 @@ async function sendEmail() {
 
     userStore.refreshUserInfo();
 
+    if (form.serverDraftId) draftDelete(form.serverDraftId).catch(() => {})
+
     addRecipientRecord();
 
     if (form.draftId) {
@@ -417,6 +421,7 @@ function resetForm() {
   form.sendType = ''
   form.emailId = 0
   form.draftId = null
+  form.serverDraftId = null
   backReply.content = ''
   backReply.subject = ''
   backReply.receiveEmail = []
@@ -549,6 +554,29 @@ function close() {
 
   if (!form.content) {
     form.content = editor.value.getContent();
+  }
+
+  if (form.serverDraftId) {
+    form.content = editor.value?.getContent() || form.content
+    const draftId = form.serverDraftId
+    const empty = !form.content && !form.subject && form.receiveEmail.length === 0
+    const request = empty
+      ? draftDelete(draftId)
+      : draftUpdate(draftId, {
+        accountId: form.accountId,
+        receiveEmail: form.receiveEmail,
+        subject: form.subject,
+        content: form.content,
+        text: form.text,
+        sendType: form.sendType,
+        emailId: form.emailId,
+      })
+    request.finally(() => {
+      draftStore.refreshList++
+    })
+    show.value = false
+    resetForm()
+    return
   }
 
   if (form.draftId) {

@@ -670,8 +670,7 @@ function handleDelete() {
   }).then(() => {
 
     if (props.type === 'draft') {
-      const draftIds = getSelectedDraftsIds();
-      emit('delete-draft', draftIds);
+      emit('delete-draft', emailList.filter(item => item.checked));
       return;
     }
 

@@ -157,7 +157,45 @@ Sending uses the mailbox that received the original message and counts against t
 }
 ```
 
-## 5. Send a new email
+## 5. Save a draft without sending
+
+`POST /api/ai/drafts`
+
+Use this when a person should review and send the message. This call does not send mail.
+
+```json
+{
+  "accountId": 1,
+  "to": ["person@example.com"],
+  "subject": "Hello",
+  "text": "Draft body",
+  "html": "<p>Optional HTML</p>",
+  "replyEmailId": 100
+}
+```
+
+`accountId` is required and must be authorized. `to` may be omitted or empty. `subject`, `text`, and `html` may be omitted, but the draft cannot be completely empty. `replyEmailId` is optional. When it is set, the draft becomes a reply to that message: the recipient defaults to the original sender, and the subject defaults to `Re:` plus the original subject. The referenced email must belong to `accountId`.
+
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "draftId": 4,
+    "serverDraftId": 4,
+    "accountId": 1,
+    "sendEmail": "hi@example.com",
+    "receiveEmail": ["person@example.com"],
+    "subject": "Re: Invoice",
+    "sendType": "reply",
+    "emailId": 100
+  }
+}
+```
+
+The draft appears in the mailbox Drafts folder. The user opens it and sends it. Do not call `/api/ai/emails/send` or `/reply` for the same message if it should remain unsent.
+
+## 6. Send a new email
 
 `POST /api/ai/send` is not valid. Use:
 
@@ -182,5 +220,5 @@ The success `data` shape is the same as reply: `emailId`, `threadId`, and `messa
 1. `GET /api/ai/accounts`.
 2. `GET /api/ai/emails?accountId={accountId}&unread=1`.
 3. For each `emailId`, `GET /api/ai/emails/{emailId}` and read `email.text` or `email.html`.
-4. Reply with `POST /api/ai/emails/{emailId}/reply` only when a reply is intended.
+4. Save a draft with `POST /api/ai/drafts` when a person must approve it. Reply with `POST /api/ai/emails/{emailId}/reply` only when the message should be sent immediately.
 5. If `nextCursor` is not null, repeat the search with `cursor={nextCursor}`.

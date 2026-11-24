@@ -9,6 +9,7 @@ import settingService from './setting-service';
 import emailService from './email-service';
 import attService from './att-service';
 import verifyUtils from '../utils/verify-utils';
+import draftService from './draft-service';
 
 const SUMMARY_LENGTH = 280;
 
@@ -185,6 +186,12 @@ const aiService = {
 				size: item.size,
 			})),
 		};
+	},
+
+	async createDraft(c, params) {
+		const accounts = await this.allowedAccounts(c);
+		const mailbox = this.requireAccount(accounts, params.accountId);
+		return draftService.create(c, params, mailbox.userId);
 	},
 
 	async reply(c, emailId, params) {

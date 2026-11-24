@@ -70,16 +70,23 @@ watch(() => draftStore.refreshList, async () => {
     scroll.value.emailList.push(...list)
 })
 
-async function getEmailList() {
-  const local = await db.value.draft.orderBy('createTime').reverse().toArray()
-  let server = []
+async function localDrafts() {
   try {
-    server = await draftList()
+    if (!db.value?.draft?.orderBy) return []
+    return await db.value.draft.orderBy('createTime').reverse().toArray()
   } catch {
-    server = []
+    return []
   }
-  const list = [...server, ...local].sort((left, right) => String(right.createTime).localeCompare(String(left.createTime)))
-  return { list }
+}
+
+async function getEmailList() {
+  const [server, local] = await Promise.all([
+    draftList().catch(() => []),
+    localDrafts(),
+  ])
+  const list = [...(Array.isArray(server) ? server : []), ...local]
+    .sort((left, right) => String(right.createTime).localeCompare(String(left.createTime)))
+  return { list, total: list.length }
 }
 
 async function deleteDraft(items) {

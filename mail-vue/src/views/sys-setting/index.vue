@@ -1790,6 +1790,8 @@ function change(e) {
   delete settingForm.s3SecretKey
   delete settingForm.tgBotToken
   delete settingForm.resendTokens
+  delete settingForm.aiAccountIds
+  delete settingForm.aiTokenHash
   editSetting(settingForm, false)
 }
 

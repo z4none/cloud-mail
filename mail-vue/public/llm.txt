@@ -60,7 +60,7 @@ Call this first. Use `accountId` for later searches and new messages. An empty a
 | accountId | no | Limit to one authorized mailbox. Omit to search all authorized mailboxes |
 | keyword | no | Matches subject, sender name, or sender email. Maximum 100 characters |
 | unread | no | `1` or `true` returns unread mail only |
-| since | no | Inclusive lower bound on `createTime`, ISO-8601 |
+| since | no | Inclusive lower bound on `createTime`. Use `YYYY-MM-DD HH:mm:ss` or ISO-8601. Stored times are UTC |
 | cursor | no | Pass the previous response's `nextCursor` to get older mail |
 | limit | no | Page size, 1–50. Default 20 |
 

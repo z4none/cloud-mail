@@ -101,7 +101,8 @@ const aiService = {
 		if (params.unread === '1' || params.unread === 'true') {
 			conditions.push(eq(email.unread, emailConst.unread.UNREAD));
 		}
-		if (params.since) conditions.push(gte(email.createTime, String(params.since)));
+		const since = this.normalizeSince(params.since);
+		if (since) conditions.push(gte(email.createTime, since));
 		const cursor = Number(params.cursor);
 		if (cursor) conditions.push(lt(email.emailId, cursor));
 
@@ -242,6 +243,14 @@ const aiService = {
 	sentResult(rows) {
 		const row = rows?.[0] || {};
 		return { emailId: row.emailId, threadId: row.threadId, messageId: row.messageId };
+	},
+
+	normalizeSince(value) {
+		const raw = String(value || '').trim();
+		if (!raw) return '';
+		const parsed = new Date(raw.includes('T') ? raw : `${raw.replace(' ', 'T')}Z`);
+		if (Number.isNaN(parsed.getTime())) return raw.slice(0, 19).replace('T', ' ');
+		return parsed.toISOString().slice(0, 19).replace('T', ' ');
 	},
 
 	replySubject(subject) {

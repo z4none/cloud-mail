@@ -104,6 +104,10 @@ describe('AI mailbox access', () => {
 	it('builds an English reply subject without changing the message body', () => {
 		expect(aiService.replySubject('回复：Invoice')).toBe('Re: Invoice');
 	});
+
+	it('compares ISO timestamps with the stored UTC text format', () => {
+		expect(aiService.normalizeSince('2026-11-24T00:00:00Z')).toBe('2026-11-24 00:00:00');
+	});
 });
 
 describe('server drafts', () => {

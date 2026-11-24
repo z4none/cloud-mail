@@ -445,7 +445,7 @@ function openForward(email) {
 
   setTimeout(() => {
     defValue.value = `
-      ${formatImage(email.content) || `<pre style="font-family: inherit;word-break: break-word;white-space: pre-wrap;margin: 0">${email.text}</pre>`}
+      ${formatImage(email.content) || (email.text ? `<pre style="font-family: inherit;word-break: break-word;white-space: pre-wrap;margin: 0">${email.text}</pre>` : '')}
     `
     open()
 
@@ -477,11 +477,11 @@ function openReply(email) {
     <div></div>
     <div>
     <br>
-        On ${formatReplyDate(email.createTime)}, ${email.name} &lt;${email.sendEmail}&gt; wrote:
+        On ${formatReplyDate(email.createTime)}, ${email.name || email.sendEmail || ''} &lt;${email.sendEmail || ''}&gt; wrote:
     </div>
     <blockquote class="mceNonEditable" style="margin: 0 0 0 0.8ex;border-left: 1px solid rgb(204,204,204);padding-left: 1ex;">
       <articl>
-          ${formatImage(email.content) || `<pre style="font-family: inherit;word-break: break-word;white-space: pre-wrap;margin: 0">${email.text}</pre>`}
+          ${formatImage(email.content) || (email.text ? `<pre style="font-family: inherit;word-break: break-word;white-space: pre-wrap;margin: 0">${email.text}</pre>` : '')}
       </article>
     </blockquote>`
     open()

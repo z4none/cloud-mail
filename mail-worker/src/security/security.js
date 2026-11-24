@@ -8,6 +8,7 @@ import permService from '../service/perm-service';
 import { t } from '../i18n/i18n'
 import app from '../hono/hono';
 import rateLimitService from '../service/rate-limit-service';
+import aiService from '../service/ai-service';
 
 const exclude = [
 	'/login',
@@ -44,6 +45,8 @@ const requirePerms = [
 	'/setting/set',
 	'/setting/query',
 	'/setting/setBlacklist',
+	'/setting/aiToken',
+	'/setting/aiAccounts',
 	'/user/delete',
 	'/user/setPwd',
 	'/user/setStatus',
@@ -81,8 +84,8 @@ const premKey = {
 	'user:delete': ['/user/delete','/user/deleteAccount'],
 	'all-email:query': ['/allEmail/list','/allEmail/latest'],
 	'all-email:delete': ['/allEmail/delete','/allEmail/batchDelete'],
-	'setting:query': ['/setting/query'],
-	'setting:set': ['/setting/set', '/setting/setBackground','/setting/deleteBackground','/setting/setBlacklist'],
+	'setting:query': ['/setting/query', '/setting/aiAccounts'],
+	'setting:set': ['/setting/set', '/setting/setBackground','/setting/deleteBackground','/setting/setBlacklist','/setting/aiToken','/setting/aiAccounts'],
 	'analysis:query': ['/analysis/echarts'],
 	'reg-key:add': ['/regKey/add'],
 	'reg-key:query': ['/regKey/list','/regKey/history'],
@@ -99,6 +102,11 @@ app.use('*', async (c, next) => {
 	});
 
 	if (index > -1) {
+		return await next();
+	}
+
+	if (path === '/ai' || path.startsWith('/ai/')) {
+		await aiService.authenticate(c);
 		return await next();
 	}
 

@@ -23,3 +23,19 @@ export function deleteBackground() {
 export function setBlackList(params) {
     return http.put('/setting/setBlacklist', params)
 }
+
+export function aiAccessQuery() {
+    return http.get('/setting/aiAccounts')
+}
+
+export function aiAccessSave(accountIds) {
+    return http.put('/setting/aiAccounts', { accountIds })
+}
+
+export function aiTokenCreate() {
+    return http.post('/setting/aiToken')
+}
+
+export function aiTokenRevoke() {
+    return http.delete('/setting/aiToken')
+}

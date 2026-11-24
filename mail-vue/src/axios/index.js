@@ -102,6 +102,8 @@ http.interceptors.response.use((res) => {
         const noMsg = error.config.noMsg;
 
         if (noMsg) {
+            const body = error.response?.data
+            if (body && typeof body === 'object' && body.message) return Promise.reject(body)
             return Promise.reject(error)
         } else if (error.message.includes('Network Error')) {
             ElMessage({

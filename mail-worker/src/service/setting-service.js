@@ -16,6 +16,7 @@ const settingService = {
 	async refresh(c) {
 		const settingRow = await orm(c).select().from(setting).get();
 		settingRow.resendTokens = JSON.parse(settingRow.resendTokens);
+		settingRow.aiAccountIds = this.parseAiAccountIds(settingRow.aiAccountIds);
 		c.set('setting', settingRow);
 		await c.env.kv.put(KvConst.SETTING, JSON.stringify(settingRow));
 	},
@@ -61,6 +62,8 @@ const settingService = {
 		setting.projectLink = projectLink;
 
 		setting.emailPrefixFilter = setting.emailPrefixFilter.split(",").filter(Boolean);
+		setting.aiAccountIds = this.parseAiAccountIds(setting.aiAccountIds);
+		setting.aiTokenHash = setting.aiTokenHash || '';
 
 		c.set?.('setting', setting);
 		return setting;
@@ -106,8 +109,21 @@ const settingService = {
 		settingRow.addVerifyOpen = addVerifyOpen
 
 		settingRow.storageType = await r2Service.storageType(c);
+		delete settingRow.aiTokenHash;
 
 		return settingRow;
+	},
+
+	parseAiAccountIds(value) {
+		const source = typeof value === 'string' ? (() => {
+			try {
+				return JSON.parse(value || '[]');
+			} catch {
+				return [];
+			}
+		})() : value;
+		if (!Array.isArray(source)) return [];
+		return [...new Set(source.map(Number).filter(id => Number.isInteger(id) && id > 0))];
 	},
 
 	async set(c, params) {
@@ -130,6 +146,10 @@ const settingService = {
 		}
 
 		params.resendTokens = JSON.stringify(resendTokens);
+		delete params.aiTokenHash;
+		if (params.aiAccountIds !== undefined) {
+			params.aiAccountIds = JSON.stringify(this.parseAiAccountIds(params.aiAccountIds));
+		}
 
 		await orm(c).update(setting).set({ ...params }).returning().get();
 		await this.refresh(c);
@@ -190,6 +210,25 @@ const settingService = {
 		await orm(c).update(setting).set({ blackSubject, blackContent, blackFrom }).run();
 		await this.refresh(c);
 		return this.get(c);
+	},
+
+	async generateAiToken(c) {
+		const bytes = crypto.getRandomValues(new Uint8Array(32));
+		const token = [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
+		const hash = await this.hashAiToken(token);
+		await orm(c).update(setting).set({ aiTokenHash: hash }).run();
+		await this.refresh(c);
+		return { token };
+	},
+
+	async revokeAiToken(c) {
+		await orm(c).update(setting).set({ aiTokenHash: '' }).run();
+		await this.refresh(c);
+	},
+
+	async hashAiToken(token) {
+		const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
+		return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
 	},
 
 	async websiteConfig(c) {

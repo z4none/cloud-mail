@@ -20,6 +20,7 @@ import dayjs from 'dayjs';
 import kvConst from '../const/kv-const';
 import { t } from '../i18n/i18n'
 import domainUtils from '../utils/domain-uitls';
+import verifyUtils from '../utils/verify-utils';
 import account from "../entity/account";
 import { att } from '../entity/att';
 import telegramService from './telegram-service';
@@ -346,6 +347,11 @@ const emailService = {
 			attachments = [] //附件
 		} = params;
 
+		receiveEmail = Array.isArray(receiveEmail) ? receiveEmail.map(item => String(item || '').trim()) : [];
+		if (receiveEmail.length === 0 || receiveEmail.some(item => !verifyUtils.isEmail(item))) {
+			throw new BizError(t('notEmail'), 400);
+		}
+
 		const { resendTokens, r2Domain, send, domainList } = await settingService.query(c);
 
 		let { imageDataList, html } = await attService.toImageUrlHtml(c, content);
@@ -480,7 +486,7 @@ const emailService = {
 
 
 		if (error) {
-			throw new BizError(error.message);
+			throw this.providerError(error);
 		}
 
 		imageDataList = imageDataList.map(item => ({...item, contentId: `<${item.contentId}>`}))
@@ -587,18 +593,30 @@ const emailService = {
 			sendForm.attachments = attachments;
 		}
 
-		if (params.sendType === 'reply' && params.messageId) {
-			sendForm.headers['in-reply-to'] = params.messageId;
-			sendForm.headers.references = params.messageId;
+		const replyHeaders = params.sendType === 'reply' ? this.replyHeaders(params.messageId) : null;
+		if (replyHeaders) Object.assign(sendForm.headers, replyHeaders);
+
+		try {
+			const result = await c.env.email.send(sendForm);
+			return { data: { id: result?.messageId || '' } };
+		} catch (error) {
+			return { error };
 		}
+	},
 
-		const result = await c.env.email.send(sendForm);
+	providerError(error) {
+		const status = Number(error?.statusCode || error?.status);
+		const code = Number.isInteger(status) && status >= 400 && status < 500 ? status : 400;
+		return new BizError(error?.message || 'The email service rejected the message', code);
+	},
 
-		return {
-			data: {
-				id: result.messageId
-			}
-		};
+	replyHeaders(messageId) {
+		const raw = `${messageId || ''}`.trim();
+		if (!raw) return null;
+		const wrapped = raw.match(/<[^<>\s]+>/g);
+		const ids = wrapped?.length ? wrapped : (/^[^\s<>]+@[^\s<>]+$/.test(raw) ? [`<${raw}>`] : []);
+		if (!ids.length) return null;
+		return { 'in-reply-to': ids[0], references: ids.join(' ') };
 	},
 
 	async sendByResend(resendToken, params) {
@@ -614,10 +632,8 @@ const emailService = {
 			headers: { 'message-id': params.outboundMessageId }
 		};
 
-		if (params.sendType === 'reply' && params.messageId) {
-			sendForm.headers['in-reply-to'] = params.messageId;
-			sendForm.headers.references = params.messageId;
-		}
+		const replyHeaders = params.sendType === 'reply' ? this.replyHeaders(params.messageId) : null;
+		if (replyHeaders) Object.assign(sendForm.headers, replyHeaders);
 
 		return await resend.emails.send(sendForm);
 	},

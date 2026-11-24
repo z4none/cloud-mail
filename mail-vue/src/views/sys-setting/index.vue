@@ -215,6 +215,20 @@
               </div>
               <div class="setting-item">
                 <div>
+                  <span>{{ $t('aiAccess') }}</span>
+                  <el-tooltip effect="dark" :content="$t('aiAccessDesc')">
+                    <Icon class="warning" icon="fe:warning" width="18" height="18"/>
+                  </el-tooltip>
+                </div>
+                <div class="forward">
+                  <span>{{ aiEnabled ? $t('aiTokenReady') : $t('aiTokenMissing') }}</span>
+                  <el-button class="opt-button" style="margin-top: 0" size="small" type="primary" @click="openAiAccess">
+                    <Icon icon="fluent:settings-48-regular" width="16" height="16"/>
+                  </el-button>
+                </div>
+              </div>
+              <div class="setting-item">
+                <div>
                   <span>{{ $t('autoClean') }}</span>
                   <el-tooltip effect="dark" :content="$t('autoCleanDesc')">
                     <Icon class="warning" icon="fe:warning" width="18" height="18"/>
@@ -911,6 +925,22 @@ Authorization: &lt;secret&gt;</pre>
         </el-form>
         <el-button type="primary" style="width: 100%;" :loading="settingLoading" @click="saveAutoClean">{{ $t('save') }}</el-button>
       </el-dialog>
+      <el-dialog v-model="aiAccessShow" :title="t('aiAccess')" class="forward-dialog">
+        <div class="setting-item">
+          <div><span>{{ aiEnabled ? $t('aiTokenReady') : $t('aiTokenMissing') }}</span></div>
+          <div>
+            <el-button size="small" type="primary" :loading="settingLoading" @click="generateAiToken">{{ aiEnabled ? $t('rotateAiToken') : $t('generateAiToken') }}</el-button>
+            <el-button v-if="aiEnabled" size="small" :loading="settingLoading" @click="revokeAiToken">{{ $t('revokeAiToken') }}</el-button>
+          </div>
+        </div>
+        <div class="forward-set-title">{{ $t('aiMailboxes') }}</div>
+        <el-scrollbar max-height="220px">
+          <el-checkbox-group v-model="aiAccountIds">
+            <el-checkbox v-for="item in aiAccounts" :key="item.accountId" :value="item.accountId" :label="item.accountId" style="display:flex;height:auto;margin:8px 0">{{ item.name || item.email }} &lt;{{ item.email }}&gt;</el-checkbox>
+          </el-checkbox-group>
+        </el-scrollbar>
+        <el-button type="primary" style="width: 100%;margin-top: 16px;" :loading="settingLoading" @click="saveAiMailboxes">{{ $t('saveAiMailboxes') }}</el-button>
+      </el-dialog>
       <el-dialog v-model="aiCodeFilterShow" class="forward-dialog" @closed="resetAiCodeFilter">
         <template #header>
           <div class="forward-head">
@@ -933,7 +963,7 @@ Authorization: &lt;secret&gt;</pre>
 
 <script setup>
 import {computed, defineOptions, nextTick, reactive, ref} from "vue";
-import {deleteBackground, setBackground, setBlackList, settingQuery, settingSet} from "@/request/setting.js";
+import {aiAccessQuery, aiAccessSave, aiTokenCreate, aiTokenRevoke, deleteBackground, setBackground, setBlackList, settingQuery, settingSet} from "@/request/setting.js";
 import {useSettingStore} from "@/store/setting.js";
 import {useUiStore} from "@/store/ui.js";
 import {useUserStore} from "@/store/user.js";
@@ -969,6 +999,10 @@ const editTitleShow = ref(false)
 const resendTokenFormShow = ref(false)
 const blackFormShow = ref(false)
 const autoCleanShow = ref(false)
+const aiAccessShow = ref(false)
+const aiEnabled = ref(false)
+const aiAccounts = ref([])
+const aiAccountIds = ref([])
 const aiCodeFilterShow = ref(false)
 const r2DomainShow = ref(false)
 const turnstileShow = ref(false)
@@ -1295,6 +1329,54 @@ function openWebhookSetting() {
 
 function openEmailPrefix() {
   emailPrefixShow.value = true
+}
+
+function openAiAccess() {
+  aiAccessShow.value = true
+  loadAiAccess()
+}
+
+function loadAiAccess() {
+  return aiAccessQuery().then(data => {
+    aiEnabled.value = data.enabled
+    aiAccounts.value = data.accounts || []
+    aiAccountIds.value = data.accountIds || []
+  })
+}
+
+function generateAiToken() {
+  if (settingLoading.value) return
+  settingLoading.value = true
+  aiTokenCreate().then(data => {
+    aiEnabled.value = true
+    ElMessageBox.alert(data.token, t('aiTokenOnce'), {
+      confirmButtonText: t('save'),
+      customClass: 'ai-token-dialog'
+    })
+  }).finally(() => {
+    settingLoading.value = false
+  })
+}
+
+function revokeAiToken() {
+  if (settingLoading.value) return
+  settingLoading.value = true
+  aiTokenRevoke().then(() => {
+    aiEnabled.value = false
+  }).finally(() => {
+    settingLoading.value = false
+  })
+}
+
+function saveAiMailboxes() {
+  if (settingLoading.value) return
+  settingLoading.value = true
+  aiAccessSave(aiAccountIds.value).then(data => {
+    aiAccountIds.value = data.accountIds || []
+    ElMessage({ message: t('saveSuccessMsg'), type: 'success', plain: true })
+  }).finally(() => {
+    settingLoading.value = false
+  })
 }
 
 function openAutoClean() {

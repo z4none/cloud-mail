@@ -7,6 +7,7 @@ const windows = {
 	'/public/addUser': { limit: 10, ttl: 60 },
 	'/public/emailList': { limit: 60, ttl: 60 },
 	'/oauth': { limit: 20, ttl: 600 },
+	'/ai': { limit: 60, ttl: 60 },
 };
 
 const rateLimitService = {

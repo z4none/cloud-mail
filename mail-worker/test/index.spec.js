@@ -5,6 +5,8 @@ import jwtUtils from '../src/utils/jwt-utils';
 import rateLimitService from '../src/service/rate-limit-service';
 import r2Service from '../src/service/r2-service';
 import emailService from '../src/service/email-service';
+import aiService from '../src/service/ai-service';
+import settingService from '../src/service/setting-service';
 
 const context = { env: { jwt_secret: 'test-secret' } };
 
@@ -57,6 +59,49 @@ describe('email thread matching', () => {
 			inReplyTo: '<first@example.test>',
 			relation: '<first@example.test> <second@example.test>'
 		})).toEqual(['<first@example.test>', '<second@example.test>']);
+	});
+});
+
+describe('outbound provider errors', () => {
+	it('preserves a provider rejection instead of hiding it as 501', () => {
+		const error = emailService.providerError({ message: 'Invalid `to` field', statusCode: 422 });
+		expect(error.message).toBe('Invalid `to` field');
+		expect(error.code).toBe(422);
+		expect(emailService.providerError({ message: 'provider unavailable', statusCode: 500 }).code).toBe(400);
+	});
+
+	it('omits reply headers that are not message ids', () => {
+		expect(emailService.replyHeaders('user@fynxlab.com')).toEqual({
+			'in-reply-to': '<user@fynxlab.com>',
+			references: '<user@fynxlab.com>',
+		});
+		expect(emailService.replyHeaders('<first@example.test> <second@example.test>').references).toBe('<first@example.test> <second@example.test>');
+		expect(emailService.replyHeaders('not a message id')).toBeNull();
+	});
+});
+
+describe('AI mailbox access', () => {
+	it('parses and deduplicates authorized account ids', () => {
+		expect(settingService.parseAiAccountIds('[2,2,0,"3"]')).toEqual([2, 3]);
+		expect(settingService.parseAiAccountIds('not-json')).toEqual([]);
+	});
+
+	it('accepts only the matching token hash', async () => {
+		const hash = await settingService.hashAiToken('secret-token');
+		const actual = await settingService.hashAiToken('secret-token');
+		expect(aiService.tokenMatches(actual, hash)).toBe(true);
+		expect(aiService.tokenMatches(await settingService.hashAiToken('other-token'), hash)).toBe(false);
+		expect(aiService.tokenMatches('', hash)).toBe(false);
+	});
+
+	it('rejects mailboxes outside the authorized set', () => {
+		const accounts = [{ accountId: 7, email: 'hi@musicraft.io', userId: 1 }];
+		expect(aiService.requireAccount(accounts, 7).email).toBe('hi@musicraft.io');
+		expect(() => aiService.requireAccount(accounts, 8)).toThrowError('This mailbox is not allowed');
+	});
+
+	it('builds an English reply subject without changing the message body', () => {
+		expect(aiService.replySubject('回复：Invoice')).toBe('Re: Invoice');
 	});
 });
 

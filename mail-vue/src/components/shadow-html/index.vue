@@ -7,6 +7,9 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { loadObjectUrl } from '@/utils/object.js'
+import { useUiStore } from '@/store/ui.js'
+
+const uiStore = useUiStore()
 
 const props = defineProps({
   html: {
@@ -26,9 +29,34 @@ const allowedAttributes = new Set([
   'href', 'id', 'name', 'rel', 'rowspan', 'src', 'style', 'target', 'title', 'valign', 'width'
 ])
 
+function colorChannels(value) {
+  const color = value.replace(/!important/gi, '').trim().toLowerCase()
+  const hex = color.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/)
+  if (hex) {
+    const digits = hex[1].length === 3 ? hex[1].split('').map(item => item + item).join('') : hex[1]
+    return [0, 2, 4].map(index => Number.parseInt(digits.slice(index, index + 2), 16))
+  }
+  const rgb = color.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/)
+  if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])]
+  if (color === 'black') return [0, 0, 0]
+  return null
+}
+
+function isDarkText(value) {
+  const channels = colorChannels(value)
+  if (!channels) return false
+  const [red, green, blue] = channels.map(channel => {
+    const value = channel / 255
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue < 0.28
+}
+
 function sanitizeStyle(value) {
-  return value
-    .replace(/(^|;)\s*color\s*:\s*(#000(?:000)?|black|rgb\(\s*0\s*,\s*0\s*,\s*0\s*\))\s*(?:!important)?\s*(?=;|$)/gi, '$1')
+  const withoutDarkText = uiStore.dark
+    ? value.replace(/(^|;)(\s*color\s*:\s*)([^;]+)/gi, (match, boundary, _property, color) => isDarkText(color) ? boundary : match)
+    : value
+  return withoutDarkText
     .replace(/url\s*\(/gi, '')
     .replace(/expression\s*\(/gi, '')
     .replace(/behavior\s*:/gi, '')
@@ -88,13 +116,15 @@ async function updateContent() {
   const currentVersion = ++renderVersion
   const sanitized = sanitizeEmailHtml(props.html)
 
+  const textColor = uiStore.dark ? '#E5EAF3' : '#303133'
+  const linkColor = uiStore.dark ? '#79BBFF' : '#0E70DF'
   shadowRoot.innerHTML = `
     <style>
-      :host { all: initial; width: 100%; height: 100%; font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif; font-size: 14px; line-height: 1.5; color: var(--el-text-color-primary); word-break: break-word; }
+      :host { all: initial; color-scheme: ${uiStore.dark ? 'dark' : 'light'}; width: 100%; height: 100%; font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif; font-size: 14px; line-height: 1.5; color: ${textColor}; word-break: break-word; }
       h1, h2, h3, h4 { font-size: 18px; font-weight: 700; }
       p { margin: 0; }
-      a { text-decoration: none; color: var(--el-color-primary); }
-      .shadow-content { background: transparent; width: fit-content; height: fit-content; min-width: 100%; }
+      a, a * { text-decoration: none; color: ${linkColor} !important; }
+      .shadow-content { background: transparent; color: ${textColor}; width: fit-content; height: fit-content; min-width: 100%; }
       img:not(table img) { max-width: 100%; height: auto !important; }
     </style>
     <div class="shadow-content"></div>
@@ -132,7 +162,7 @@ onMounted(() => {
   updateContent()
 })
 
-watch(() => props.html, updateContent)
+watch(() => [props.html, uiStore.dark], updateContent)
 </script>
 
 <style scoped>

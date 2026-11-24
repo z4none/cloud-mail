@@ -438,7 +438,7 @@ function openForward(email) {
 
   email.subject = email.subject || ''
 
-  form.subject = email.subject
+  form.subject = englishSubject(email.subject, 'Fwd:')
   form.sendType = 'forward'
 
   defValue.value = ''
@@ -466,11 +466,7 @@ function openReply(email) {
   email.subject = email.subject || ''
 
   form.receiveEmail.push(email.sendEmail)
-  form.subject = (
-      email.subject.startsWith('Re:') ||
-      email.subject.startsWith('Re：') ||
-      email.subject.startsWith('回复：') ||
-      email.subject.startsWith('回复:')) ? email.subject : 'Re: ' + email.subject
+  form.subject = englishSubject(email.subject, 'Re:')
   form.sendType = 'reply'
   form.emailId = email.emailId
 
@@ -498,6 +494,11 @@ function openReply(email) {
     })
   })
 
+}
+
+function englishSubject(subject, prefix) {
+  const base = (subject || '').replace(/^(\s*(re|fw|fwd|回复|转发)\s*[:：]\s*)+/i, '').trim()
+  return base ? `${prefix} ${base}` : prefix
 }
 
 function formatImage(content) {

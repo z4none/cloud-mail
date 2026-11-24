@@ -4,6 +4,11 @@ import result from '../model/result';
 import userContext from '../security/user-context';
 import attService from '../service/att-service';
 
+app.get('/email/unread', async (c) => {
+	const total = await emailService.unreadCount(c, userContext.getUserId(c), c.req.query('accountId'));
+	return c.json(result.ok(total));
+});
+
 app.get('/email/list', async (c) => {
 	const data = await emailService.list(c, c.req.query(), userContext.getUserId(c));
 	return c.json(result.ok(data));

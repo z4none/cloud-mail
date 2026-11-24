@@ -28,6 +28,7 @@ const allowedAttributes = new Set([
 
 function sanitizeStyle(value) {
   return value
+    .replace(/(^|;)\s*color\s*:\s*(#000(?:000)?|black|rgb\(\s*0\s*,\s*0\s*,\s*0\s*\))\s*(?:!important)?\s*(?=;|$)/gi, '$1')
     .replace(/url\s*\(/gi, '')
     .replace(/expression\s*\(/gi, '')
     .replace(/behavior\s*:/gi, '')
@@ -92,9 +93,7 @@ async function updateContent() {
       :host { all: initial; width: 100%; height: 100%; font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif; font-size: 14px; line-height: 1.5; color: var(--el-text-color-primary); word-break: break-word; }
       h1, h2, h3, h4 { font-size: 18px; font-weight: 700; }
       p { margin: 0; }
-      .shadow-content, .shadow-content * { color: var(--el-text-color-primary) !important; }
-      .shadow-content a, .shadow-content a * { color: var(--el-color-primary) !important; }
-      a { text-decoration: none; }
+      a { text-decoration: none; color: var(--el-color-primary); }
       .shadow-content { background: transparent; width: fit-content; height: fit-content; min-width: 100%; }
       img:not(table img) { max-width: 100%; height: auto !important; }
     </style>

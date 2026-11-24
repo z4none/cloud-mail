@@ -15,7 +15,7 @@
         </div>
       </div>
       <div class="container">
-        <el-input-tag  @add-tag="addTagChange" tag-type="primary" @input="inputChange" size="default" v-model="form.receiveEmail" >
+        <el-input-tag  @add-tag="addTagChange" tag-type="primary" @input="inputChange" size="default" v-model="form.receiveEmail" :placeholder="t('recipientHint')">
           <template #prefix>
             <div class="item-title" >{{ $t('recipient') }}</div>
             <el-select

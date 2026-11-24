@@ -16,6 +16,7 @@
         <div class="email-title">
           {{ email.subject }}
         </div>
+        <div v-if="threadLoading" class="thread-loading">{{ $t('loadingConversation') }}</div>
         <div
             v-for="message in displayedEmails"
             :key="message.emailId"
@@ -126,7 +127,8 @@ const email = computed(() => emailStore.contentData.email || {
 const showPreview = ref(false)
 const srcList = reactive([])
 const threadEmails = ref([])
-const displayedEmails = computed(() => threadEmails.value.length ? threadEmails.value : [email.value])
+const threadLoading = ref(false)
+const displayedEmails = computed(() => threadEmails.value.length ? threadEmails.value : (threadLoading.value ? [] : [email.value]))
 const latestMessageId = computed(() => displayedEmails.value.at(-1)?.emailId)
 
 function senderInitial(message) {
@@ -138,8 +140,11 @@ const { t } = useI18n()
 async function loadThread(emailId) {
   if (!emailId) {
     threadEmails.value = []
+    threadLoading.value = false
     return
   }
+  threadLoading.value = true
+  threadEmails.value = []
   try {
     const list = await emailThread(emailId)
     threadEmails.value = Array.isArray(list) ? list : []
@@ -150,6 +155,8 @@ async function loadThread(emailId) {
   } catch (error) {
     console.error(error)
     threadEmails.value = []
+  } finally {
+    threadLoading.value = false
   }
 }
 
@@ -361,6 +368,11 @@ const handleDelete = (message = email.value) => {
     padding: 12px;
   }
 
+  .thread-loading {
+    margin: 0 4px 16px;
+    color: var(--secondary-text-color);
+  }
+
   .email-title {
     font-size: clamp(19px, 2vw, 24px);
     font-weight: 650;
@@ -516,8 +528,7 @@ const handleDelete = (message = email.value) => {
         display: flex;
         gap: 2px;
         align-self: flex-start;
-        opacity: 0.68;
-        transition: opacity 160ms ease-out;
+        opacity: 1;
 
         button {
           width: 30px;

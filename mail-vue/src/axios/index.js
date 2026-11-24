@@ -2,6 +2,8 @@ import axios from "axios";
 import router from "@/router";
 import i18n from "@/i18n/index.js";
 import {useSettingStore} from "@/store/setting.js";
+import {useUserStore} from "@/store/user.js";
+import {useEmailStore} from "@/store/email.js";
 import {clearObjectUrls} from "@/utils/object.js";
 
 let http = axios.create({
@@ -10,11 +12,11 @@ let http = axios.create({
 
 let handlingUnauthorized = false
 
-function handleUnauthorized(message) {
+function handleUnauthorized() {
     if (handlingUnauthorized) return
     handlingUnauthorized = true
     ElMessage({
-        message,
+        message: i18n.global.t('sessionExpiredMsg'),
         type: 'error',
         plain: true,
         grouping: true,
@@ -22,6 +24,8 @@ function handleUnauthorized(message) {
     })
     localStorage.removeItem('token')
     clearObjectUrls()
+    useUserStore().user = {}
+    useEmailStore().contentData.email = null
     if (router.currentRoute.value.path !== '/login') {
         router.replace('/login')
     }
@@ -44,7 +48,7 @@ http.interceptors.response.use((res) => {
             const data = res.data
 
             if (data.code === 401) {
-                handleUnauthorized(data.message)
+                handleUnauthorized()
                 reject(data)
             } else if (noMsg) {
 
@@ -86,7 +90,7 @@ http.interceptors.response.use((res) => {
     (error) => {
 
         if (error.response?.status === 401) {
-            handleUnauthorized(error.response.data?.message || i18n.global.t('reqFailErrorMsg'))
+            handleUnauthorized()
             return Promise.reject(error)
         }
 

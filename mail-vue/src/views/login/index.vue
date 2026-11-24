@@ -1,9 +1,13 @@
 <template>
-  <div id="login-box" :style=" background ? 'background: var(--el-bg-color)' : ''" v-loading="oauthLoading" element-loading-text="登录中...">
+  <div id="login-box" :style=" background ? 'background: var(--el-bg-color)' : ''" v-loading="oauthLoading" :element-loading-text="$t('signingIn')">
     <div id="background-wrap" v-if="!settingStore.settings.background" aria-hidden="true"></div>
     <div v-else class="custom-background" :style="background" aria-hidden="true"></div>
     <div class="form-wrapper">
       <div class="container">
+        <el-select class="login-lang" :model-value="settingStore.lang" @change="changeLang">
+          <el-option label="中文" value="zh" />
+          <el-option label="English" value="en" />
+        </el-select>
         <span class="form-title">{{ settingStore.settings.title }}</span>
         <span class="form-desc" v-if="show === 'login'">{{ $t('loginTitle') }}</span>
         <span class="form-desc" v-else>{{ $t('regTitle') }}</span>
@@ -26,14 +30,15 @@
                       :value="item"
                   />
                 </el-select>
-                <div style="color: var(--el-text-color-primary)">
+                <div class="domain-suffix" style="color: var(--el-text-color-primary)">
+                  <span>{{ $t('emailDomain') }}</span>
                   <span>{{ suffix }}</span>
                   <Icon class="setting-icon" icon="mingcute:down-small-fill" width="20" height="20"/>
                 </div>
               </div>
             </template>
           </el-input>
-          <el-input v-model="form.password" :placeholder="$t('password')" type="password" autocomplete="off" @keyup.enter="submit">
+          <el-input v-model="form.password" :placeholder="$t('password')" type="password" show-password autocomplete="off" @keyup.enter="submit">
           </el-input>
           <el-button class="btn" type="primary" @click="submit" :loading="loginLoading"
           >{{ $t('loginBtn') }}
@@ -63,15 +68,16 @@
                       :value="item"
                   />
                 </el-select>
-                <div>
+                <div class="domain-suffix">
+                  <span>{{ $t('emailDomain') }}</span>
                   <span>{{ suffix }}</span>
                   <Icon class="setting-icon" icon="mingcute:down-small-fill" width="20" height="20"/>
                 </div>
               </div>
             </template>
           </el-input>
-          <el-input v-model="registerForm.password" :placeholder="$t('password')" type="password" autocomplete="off" @keyup.enter="submitRegister"/>
-          <el-input v-model="registerForm.confirmPassword" :placeholder="$t('confirmPwd')" type="password"
+          <el-input v-model="registerForm.password" :placeholder="$t('password')" type="password" show-password autocomplete="off" @keyup.enter="submitRegister"/>
+          <el-input v-model="registerForm.confirmPassword" :placeholder="$t('confirmPwd')" type="password" show-password
                     autocomplete="off" @keyup.enter="submitRegister"/>
           <el-input v-if="settingStore.settings.regKey === 0" v-model="registerForm.code" :placeholder="$t('regKey')"
                     type="text" autocomplete="off" @keyup.enter="submitRegister"/>
@@ -104,7 +110,7 @@
         </template>
       </div>
     </div>
-    <el-dialog class="bind-dialog" v-model="showBindForm"  title="注册邮箱" >
+    <el-dialog class="bind-dialog" v-model="showBindForm" :title="$t('bindEmailTitle')">
       <div class="bind-container">
         <el-input :class="!hideLoginDomain ? 'email-input' : ''" v-model="bindForm.email" type="text" :placeholder="$t('emailAccount')" autocomplete="off" @keyup.enter="bind">
           <template #append v-if="!hideLoginDomain">
@@ -122,7 +128,8 @@
                     :value="item"
                 />
               </el-select>
-              <div>
+              <div class="domain-suffix">
+                <span>{{ $t('emailDomain') }}</span>
                 <span>{{ suffix }}</span>
                 <Icon class="setting-icon" icon="mingcute:down-small-fill" width="20" height="20"/>
               </div>
@@ -134,7 +141,7 @@
         <el-input v-if="settingStore.settings.regKey === 2" v-model="bindForm.code"
                   :placeholder="$t('regKeyOptional')" type="text" autocomplete="off" @keyup.enter="bind"/>
         <el-button class="btn" type="primary" @click="bind" :loading="bindLoading"
-        >绑定
+        >{{ $t('bindEmailBtn') }}
         </el-button>
       </div>
     </el-dialog>
@@ -272,6 +279,17 @@ const openSelect = () => {
   mySelect.value.toggleMenu()
 }
 
+function changeLang(lang) {
+  let setting = {}
+  try {
+    setting = JSON.parse(localStorage.getItem('setting') || '{}')
+  } catch {
+    setting = {}
+  }
+  localStorage.setItem('setting', JSON.stringify({...setting, lang}))
+  window.location.reload()
+}
+
 const getFullEmail = (email) => {
   return hideLoginDomain.value ? email : email + suffix.value
 }
@@ -319,7 +337,7 @@ async function oauthGetUser() {
       showBindForm.value = true
       oauthLoading.value = false
       ElMessage({
-        message: '请注册绑定一个邮箱',
+        message: t('bindEmailHint'),
         type: 'warning',
         duration: 4000,
         plain: true,
@@ -631,6 +649,19 @@ function submitRegister() {
   position: relative;
   z-index: 10;
   width: min(420px, calc(100% - 32px));
+}
+
+.login-lang {
+  align-self: flex-end;
+  width: 116px;
+  margin-bottom: 8px;
+}
+
+.domain-suffix {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 .container {

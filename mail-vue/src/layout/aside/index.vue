@@ -10,6 +10,7 @@
                       :class="route.meta.name === 'email' ? 'choose-item' : ''">
           <Icon icon="hugeicons:mailbox-01" width="20" height="20" />
           <span class="menu-name" style="margin-left: 16px">{{$t('inbox')}}</span>
+          <span v-if="unreadCount" class="unread-count">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
         </el-menu-item>
         <el-menu-item @click="router.push({name: 'send'})" index="send" v-perm="'email:send'"
                       :class="route.meta.name === 'send' ? 'choose-item' : ''">
@@ -74,9 +75,32 @@ import router from "@/router/index.js";
 import { useRoute } from "vue-router";
 import {Icon} from "@iconify/vue";
 import {useSettingStore} from "@/store/setting.js";
+import {useAccountStore} from "@/store/account.js";
+import {emailUnread} from "@/request/email.js";
+import {onMounted, onUnmounted, ref, watch} from "vue";
 
 const settingStore = useSettingStore();
+const accountStore = useAccountStore();
 const route = useRoute();
+const unreadCount = ref(0)
+let unreadTimer = 0
+
+async function refreshUnread() {
+  if (!accountStore.currentAccountId) return
+  try {
+    unreadCount.value = Number(await emailUnread(accountStore.currentAccountId)) || 0
+  } catch {
+    unreadCount.value = 0
+  }
+}
+
+onMounted(() => {
+  refreshUnread()
+  unreadTimer = window.setInterval(refreshUnread, 30000)
+})
+onUnmounted(() => clearInterval(unreadTimer))
+watch(() => accountStore.currentAccountId, refreshUnread)
+watch(() => route.name, refreshUnread)
 
 </script>
 
@@ -144,6 +168,24 @@ const route = useRoute();
   .el-menu-item:hover {
     background: rgba(255, 255, 255, 0.08) !important;
   }
+}
+
+:deep(.el-menu-item) {
+  display: flex;
+  align-items: center;
+}
+
+.unread-count {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--el-color-danger);
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
 }
 
 .menu-name {

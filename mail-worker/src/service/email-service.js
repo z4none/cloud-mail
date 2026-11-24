@@ -28,7 +28,7 @@ const emailService = {
 
 	async list(c, params, userId) {
 
-		let { emailId, type, accountId, size, timeSort, allReceive, full } = params;
+		let { emailId, type, accountId, size, timeSort, allReceive, full, keyword } = params;
 
 		size = Number(size);
 		type = Number(type);
@@ -65,8 +65,8 @@ const emailService = {
 			allReceive = accountRow.allReceive;
 		}
 
-		const filters = this.emailListFilters({ userId, accountId, type, allReceive, emailId, timeSort });
-		const countFilters = this.emailListFilters({ userId, accountId, type, allReceive, withCursor: false });
+		const filters = this.emailListFilters({ userId, accountId, type, allReceive, emailId, timeSort, keyword });
+		const countFilters = this.emailListFilters({ userId, accountId, type, allReceive, keyword, withCursor: false });
 		const columns = full ? emailListColumns : emailBriefColumns;
 
 		const query = orm(c)
@@ -230,13 +230,22 @@ const emailService = {
 		return this.newThreadId();
 	},
 
-	emailListFilters({ userId, accountId, type, allReceive, emailId, timeSort, withCursor = true }) {
+	emailListFilters({ userId, accountId, type, allReceive, emailId, timeSort, keyword, withCursor = true }) {
 		const conditions = [
 			eq(email.userId, userId),
 			eq(email.type, type),
 			eq(email.isDel, isDel.NORMAL),
 			eq(account.isDel, isDel.NORMAL),
 		];
+		const normalizedKeyword = String(keyword || '').trim().slice(0, 100);
+		if (normalizedKeyword) {
+			const pattern = `%${normalizedKeyword.replace(/[%_]/g, '')}%`;
+			conditions.push(or(
+				like(email.subject, pattern),
+				like(email.name, pattern),
+				like(email.sendEmail, pattern)
+			));
+		}
 		if (!allReceive) {
 			conditions.push(eq(email.accountId, accountId));
 		}
@@ -898,6 +907,17 @@ const emailService = {
 		})
 
 		return document.toString();
+	},
+
+	async unreadCount(c, userId, accountId) {
+		const row = await orm(c).select({ total: count() }).from(email).where(and(
+			eq(email.userId, userId),
+			eq(email.accountId, Number(accountId)),
+			eq(email.type, emailConst.type.RECEIVE),
+			eq(email.unread, emailConst.unread.UNREAD),
+			eq(email.isDel, isDel.NORMAL)
+		)).get();
+		return Number(row?.total || 0);
 	},
 
 	async thread(c, emailId, userId) {

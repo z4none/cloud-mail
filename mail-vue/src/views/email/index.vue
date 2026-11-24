@@ -13,6 +13,14 @@
                @jump="jumpContent"
   >
     <template #first>
+      <el-input
+          v-model="params.keyword"
+          class="mail-search"
+          clearable
+          :placeholder="$t('searchMail')"
+          @change="scroll.refreshList()"
+          @clear="scroll.refreshList()"
+      />
       <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-down-outline"
             v-if="params.timeSort === 0" width="28" height="28"/>
       <Icon class="icon" @click="changeTimeSort" icon="material-symbols-light:timer-arrow-up-outline" v-else
@@ -49,6 +57,7 @@ const settingStore = useSettingStore();
 const scroll = ref({})
 const params = reactive({
   timeSort: 0,
+  keyword: ''
 })
 
 onMounted(() => {
@@ -86,10 +95,6 @@ async function latest() {
 
     let autoRefresh = settingStore.settings.autoRefresh;
     await sleep(autoRefresh > 1 ? autoRefresh * 1000 : 3000);
-
-    if (route.name !== 'email') {
-      continue;
-    }
 
     const latestId = scroll.value.latestEmail?.emailId
 
@@ -166,7 +171,7 @@ function getEmailList(emailId, size) {
   const accountId =  accountStore.currentAccountId;
   const allReceive = accountStore.currentAccount.allReceive;
   return emailStore.fetchList(full =>
-    emailList(accountId, allReceive, emailId, params.timeSort, size, 0, full)
+    emailList(accountId, allReceive, emailId, params.timeSort, size, 0, full, params.keyword.trim())
   ).then(data => {
     data.latestEmail.reqAccountId = accountId;
     data.latestEmail.allReceive = allReceive;
@@ -178,5 +183,9 @@ function getEmailList(emailId, size) {
 <style>
 .icon {
   cursor: pointer;
+}
+
+.mail-search {
+  width: min(220px, 34vw);
 }
 </style>

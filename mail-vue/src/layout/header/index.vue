@@ -79,6 +79,7 @@ import {logout} from "@/request/login.js";
 import {Icon} from "@iconify/vue";
 import {useUiStore} from "@/store/ui.js";
 import {useUserStore} from "@/store/user.js";
+import {useEmailStore} from "@/store/email.js";
 import {useRoute} from "vue-router";
 import {computed, ref} from "vue";
 import {useSettingStore} from "@/store/setting.js";
@@ -91,6 +92,7 @@ const {t} = useI18n();
 const route = useRoute();
 const settingStore = useSettingStore();
 const userStore = useUserStore();
+const emailStore = useEmailStore();
 const uiStore = useUiStore();
 const logoutLoading = ref(false)
 const userInfoShow = ref(false)
@@ -246,6 +248,8 @@ function clickLogout() {
   logout().then(() => {
     localStorage.removeItem("token")
     clearObjectUrls()
+    userStore.user = {}
+    emailStore.contentData.email = null
     router.replace('/login')
   }).finally(() => {
     logoutLoading.value = false

@@ -29,6 +29,21 @@
 - [complete] Phase 8A：新邮件页面内通知与浏览器通知
 - [complete] Phase 8B：通知去重、会话跳转与权限降级验证
 - [complete] Phase 9：登录态失效统一清理与登录页重定向
+- [complete] Phase 10：用户体验待办
+  - [complete] 收件箱搜索
+  - [complete] 侧边栏未读数量
+  - [complete] 离开收件箱后仍轮询并通知
+  - [cancelled] 延后浏览器通知授权（与已确认的“打开页面即申请权限”冲突，保持现状）
+  - [complete] 会话详情加载时避免内容跳动
+  - [complete] 邮件卡片操作按钮始终可见
+  - [complete] 暗色模式只修正纯黑文字，保留邮件原有品牌色
+  - [complete] 写信收件人提示；抄送/密送需独立发信协议，本次不扩展
+  - [complete] 登录页中文硬编码改为多语言
+  - [complete] 登录页可切换语言
+  - [complete] 密码框显示/隐藏
+  - [complete] 登录域名后缀增加明确标签
+  - [complete] 登录失效提示跟随界面语言
+  - [complete] 退出时清理持久化的邮件会话状态
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

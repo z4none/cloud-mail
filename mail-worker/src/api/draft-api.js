@@ -7,6 +7,11 @@ app.get('/draft/list', async (c) => {
 	return c.json(result.ok(await draftService.list(c, userContext.getUserId(c))));
 });
 
+app.post('/draft', async (c) => {
+	const data = await draftService.create(c, await c.req.json(), userContext.getUserId(c));
+	return c.json(result.ok(data));
+});
+
 app.put('/draft/:id', async (c) => {
 	const data = await draftService.update(c, c.req.param('id'), await c.req.json(), userContext.getUserId(c));
 	return c.json(result.ok(data));

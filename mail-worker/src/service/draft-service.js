@@ -36,7 +36,7 @@ const draftService = {
 		let subject = String(params.subject || '').trim();
 		const text = String(params.text || '');
 		const content = String(params.html || (text ? `<pre>${this.escapeHtml(text)}</pre>` : ''));
-		let sendType = '';
+		let sendType = ['reply', 'forward', 'send'].includes(params.sendType) ? params.sendType : '';
 		let replyEmailId = Number(params.replyEmailId) || 0;
 
 		if (replyEmailId) {

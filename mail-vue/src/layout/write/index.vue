@@ -94,7 +94,7 @@
 </template>
 <script setup>
 import tinyEditor from '@/components/tiny-editor/index.vue'
-import {h, nextTick, onMounted, onUnmounted, reactive, ref, toRaw, computed} from "vue";
+import {h, nextTick, onMounted, onUnmounted, reactive, ref, computed} from "vue";
 import {Icon} from "@iconify/vue";
 import {useUserStore} from "@/store/user.js";
 import {emailSend} from "@/request/email.js";
@@ -108,10 +108,8 @@ import {toOssDomain} from "@/utils/convert.js";
 import {formatReplyDate} from "@/utils/day.js";
 import {useSettingStore} from "@/store/setting.js";
 import {userDraftStore} from "@/store/draft.js";
-import {draftDelete, draftUpdate} from "@/request/draft.js";
+import {draftCreate, draftDelete, draftUpdate} from "@/request/draft.js";
 import {useWriterStore} from "@/store/writer.js";
-import db from "@/db/db.js";
-import dayjs from "dayjs";
 import {useI18n} from "vue-i18n";
 import router from "@/router/index.js";
 import {ElMessageBox} from "element-plus";
@@ -157,7 +155,6 @@ const form = reactive({
   text: '',
   emailId: 0,
   attachments: [],
-  draftId: null,
   serverDraftId: null,
 })
 
@@ -370,16 +367,12 @@ async function sendEmail() {
 
     userStore.refreshUserInfo();
 
-    if (form.serverDraftId) draftDelete(form.serverDraftId).catch(() => {})
+    if (form.serverDraftId) {
+      draftDelete(form.serverDraftId).catch(() => {})
+      draftStore.refreshList++
+    }
 
     addRecipientRecord();
-
-    if (form.draftId) {
-      form.subject = ''
-      form.content = ''
-      form.receiveEmail = []
-      draftStore.setDraft = {...toRaw(form)}
-    }
 
     show.value = false
     resetForm();
@@ -420,7 +413,6 @@ function resetForm() {
   form.attachments = []
   form.sendType = ''
   form.emailId = 0
-  form.draftId = null
   form.serverDraftId = null
   backReply.content = ''
   backReply.subject = ''
@@ -579,13 +571,6 @@ function close() {
     return
   }
 
-  if (form.draftId) {
-    draftStore.setDraft = {...toRaw(form)}
-    show.value = false
-    resetForm()
-    return;
-  }
-
   if (!(form.content || form.subject || form.receiveEmail.length > 0)) {
     show.value = false
     resetForm()
@@ -611,18 +596,20 @@ function close() {
     cancelButtonText: t('cancel'),
     type: 'warning',
     distinguishCancelAndClose: true
-  }).then(async () => {
-    const formData = {...toRaw(form)};
-    delete formData.draftId
-    delete formData.attachments
-    formData.createTime = dayjs().utc().format('YYYY-MM-DD HH:mm:ss');
-    const draftId = await db.value.draft.add({...formData})
-    db.value.att.add({draftId, attachments: toRaw(form.attachments)})
+  }).then(() => {
+    return draftCreate({
+      accountId: form.accountId,
+      to: form.receiveEmail,
+      subject: form.subject,
+      html: form.content,
+      text: form.text,
+      sendType: form.sendType,
+      replyEmailId: form.sendType === 'reply' ? form.emailId : 0,
+    })
+  }).then(() => {
     draftStore.refreshList++
     show.value = false
-    await nextTick(() => {
-      resetForm()
-    })
+    resetForm()
   }).catch((action) => {
     if (action === 'cancel') {
       show.value = false

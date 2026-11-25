@@ -31,6 +31,18 @@
 
 ## Description
 With only one domain, you can create multiple different email addresses, similar to major email platforms. This project can be deployed on Cloudflare Workers to reduce server costs and build your own email service.
+
+## Changes in this fork
+
+This repository is forked from [maillab/cloud-mail](https://github.com/maillab/cloud-mail) [v3.2.0](https://github.com/maillab/cloud-mail/releases/tag/v3.2.0). The items below were added here after that release. Upstream v3.3 through v3.6, including CC/BCC and WebSocket push, have not been merged.
+
+- **Deployment**: GitHub Actions is the only release path. D1 and KV must already exist with real IDs; a routine deploy does not create them.
+- **Private objects and sessions**: attachments, inline images, and backgrounds require an authenticated object API. Public object URLs are not used. Initialization is protected, requests are rate-limited, SQL uses bound parameters, and an expired session returns to the login page.
+- **Conversations**: mail is grouped by `In-Reply-To` and `References`. The same user, mailbox, and normalized subject is only a fallback. Messages are shown as cards, and each one can be replied to, forwarded, or deleted.
+- **Reading and composing**: dark mode recolors text only when contrast against its background is too low, so light invoices stay light. Generated reply and forward prefixes are always English `Re:` and `Fwd:`. New mail raises an in-app notice, and browser notification permission can be requested as soon as auto-refresh is on. Drafts are stored only on the server, not in the browser.
+- **Mailbox maintenance**: mail can be deleted after a configured number of days, with addresses excluded from cleanup. Incoming mail can be posted to a configured webhook.
+- **AI mailbox API**: `/api/ai` uses a separate system token. The plaintext is shown once and only its SHA-256 hash is stored. An admin chooses the allowed mailboxes. The API can list, search, read, reply, send, and save drafts. Search and read do not mark mail as read. It does not reuse `/public`, and it has no attachment download, CC/BCC, or delete. See [llm.txt](llm.txt).
+
 ## Project Showcase
 
 - [Live Demo](https://skymail.ink)<br>
